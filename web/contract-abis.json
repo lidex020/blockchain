@@ -1,0 +1,63 @@
+{
+  "abis": {
+    "FullStopERC20Factory": [
+      {
+        "inputs": [
+          {
+            "components": [
+              { "internalType": "string", "name": "name", "type": "string" },
+              { "internalType": "string", "name": "symbol", "type": "string" },
+              { "internalType": "uint8", "name": "decimals", "type": "uint8" },
+              { "internalType": "uint256", "name": "initialSupply", "type": "uint256" },
+              { "internalType": "uint256", "name": "maxSupply", "type": "uint256" },
+              { "internalType": "bool", "name": "mintable", "type": "bool" },
+              { "internalType": "bool", "name": "burnable", "type": "bool" },
+              { "internalType": "bool", "name": "transferRestricted", "type": "bool" },
+              { "internalType": "address", "name": "supplyRecipient", "type": "address" }
+            ],
+            "internalType": "struct FullStopERC20Factory.TokenParams",
+            "name": "p",
+            "type": "tuple"
+          }
+        ],
+        "name": "createToken",
+        "outputs": [{ "internalType": "address", "name": "asset", "type": "address" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ],
+    "FullStopERC721Factory": [
+      {
+        "inputs": [
+          {
+            "components": [
+              { "internalType": "string", "name": "name", "type": "string" },
+              { "internalType": "string", "name": "symbol", "type": "string" },
+              { "internalType": "uint256", "name": "maxSupply", "type": "uint256" },
+              { "internalType": "string", "name": "contractURI", "type": "string" }
+            ],
+            "internalType": "struct FullStopERC721Factory.CollectionParams",
+            "name": "p",
+            "type": "tuple"
+          }
+        ],
+        "name": "createCollection",
+        "outputs": [{ "internalType": "address", "name": "asset", "type": "address" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ],
+    "FullStopERC1155Factory": [
+      {
+        "inputs": [
+          { "internalType": "string", "name": "name", "type": "string" },
+          { "internalType": "string", "name": "uriTemplate", "type": "string" }
+        ],
+        "name": "createCollection",
+        "outputs": [{ "internalType": "address", "name": "asset", "type": "address" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ]
+  }
+}

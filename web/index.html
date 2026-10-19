@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Full Stop Blockchain — Everything ends here.</title>
+<meta name="description" content="One independent, EVM-compatible blockchain with a live explorer, FSTOP network data, and tools to create tokens and NFTs." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23fff'/%3E%3C/svg%3E" />
+<style>
+  /* Self-contained on purpose: the app must render even when it is opened
+     straight from disk or inside a sandboxed preview with no network access. */
+  :root {
+    --bg: #05060a;
+    --panel: rgba(255, 255, 255, 0.035);
+    --panel-strong: rgba(255, 255, 255, 0.06);
+    --line: rgba(255, 255, 255, 0.09);
+    --text: #f4f6fb;
+    --muted: #98a1b8;
+    --dim: #6d768c;
+    --accent: #7c8cff;
+    --accent-2: #b9c4ff;
+    --good: #48d597;
+    --bad: #ff6b81;
+    --warn: #ffcc66;
+    --radius: 16px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 620px at 72% -8%, rgba(96, 118, 255, .28), transparent 60%),
+                radial-gradient(700px 420px at 8% 6%, rgba(124, 140, 255, .12), transparent 60%), var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  header.site-header {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: 22px;
+    padding: 14px 26px;
+    background: rgba(5, 6, 10, .72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .orb {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff, #dfe4ff 60%, #aeb8e8);
+    box-shadow: 0 0 22px rgba(180, 195, 255, .55);
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .brand-text strong { font-size: 15px; letter-spacing: .12em; }
+  .brand-text small { color: var(--dim); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  nav.tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+  nav.tabs a {
+    padding: 8px 14px; border-radius: 999px; color: var(--muted); font-size: 13.5px; font-weight: 500;
+    border: 1px solid transparent;
+  }
+  nav.tabs a:hover { color: var(--text); background: var(--panel); }
+  nav.tabs a.active { color: var(--text); background: var(--panel-strong); border-color: var(--line); }
+  .header-side { display: flex; align-items: center; gap: 10px; }
+  .net-pill {
+    font: 12px/1 var(--mono); color: var(--muted); padding: 7px 11px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel); white-space: nowrap;
+  }
+  .net-pill.live { color: var(--good); border-color: rgba(72, 213, 151, .35); }
+  .net-pill.down { color: var(--bad); border-color: rgba(255, 107, 129, .35); }
+  main { position: relative; z-index: 1; padding: 30px 26px 60px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: clamp(30px, 5vw, 52px); line-height: 1.03; letter-spacing: -.03em; margin: 0 0 14px; }
+  h2 { font-size: 22px; letter-spacing: -.01em; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 0 0 10px; letter-spacing: .01em; }
+  p.lede { color: var(--muted); font-size: 17px; max-width: 62ch; margin: 0 0 26px; }
+  .eyebrow { color: var(--accent-2); text-transform: uppercase; letter-spacing: .22em; font-size: 11px; font-weight: 600; margin-bottom: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .card.pad-lg { padding: 24px; }
+  .grid { display: grid; gap: 16px; }
+  .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.aside { grid-template-columns: 1.15fr .85fr; align-items: start; }
+  @media (max-width: 980px) { .grid.cols-4, .grid.cols-3, .grid.cols-2, .grid.aside { grid-template-columns: 1fr; } }
+  .stat-label { color: var(--dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: .12em; }
+  .stat-value { font-size: 25px; font-weight: 650; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .stat-sub { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .row.between { justify-content: space-between; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .mono { font-family: var(--mono); font-size: 12.5px; }
+  .hash { font-family: var(--mono); font-size: 12.5px; color: var(--accent-2); cursor: pointer; word-break: break-all; }
+  .hash:hover { text-decoration: underline; }
+  .muted { color: var(--muted); }
+  .tiny { font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--dim); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; padding: 0 10px 9px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 11px 10px 11px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: rgba(255, 255, 255, .02); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    background: #fff; color: #0a0c12; border: 1px solid transparent; border-radius: 999px;
+    padding: 10px 17px; font-weight: 600; font-size: 13.5px; transition: .16s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(180, 195, 255, .16); }
+  .btn.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+  .btn.ghost:hover { background: var(--panel-strong); box-shadow: none; }
+  .btn[disabled] { opacity: .5; pointer-events: none; }
+  input, select, textarea {
+    width: 100%; background: rgba(0, 0, 0, .35); color: var(--text); border: 1px solid var(--line);
+    border-radius: 11px; padding: 11px 13px; font-size: 14px; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(124, 140, 255, .6); }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .field { display: flex; flex-direction: column; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; border: 1px solid var(--line); }
+  .pill.good { color: var(--good); border-color: rgba(72, 213, 151, .35); background: rgba(72, 213, 151, .08); }
+  .pill.bad { color: var(--bad); border-color: rgba(255, 107, 129, .35); background: rgba(255, 107, 129, .08); }
+  .pill.warn { color: var(--warn); border-color: rgba(255, 204, 102, .35); background: rgba(255, 204, 102, .08); }
+  .pill.dim { color: var(--muted); }
+  .bar { height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #cdd6ff); }
+  .notice { border-left: 2px solid var(--accent); background: rgba(124, 140, 255, .07); padding: 11px 14px; border-radius: 0 10px 10px 0; font-size: 13px; color: #cfd6f5; }
+  .notice.warn { border-color: var(--warn); background: rgba(255, 204, 102, .07); color: #f0e0bb; }
+  .notice.bad { border-color: var(--bad); background: rgba(255, 107, 129, .08); color: #ffd3d9; }
+  .seg { display: inline-flex; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 3px; }
+  .seg button { background: transparent; border: 0; color: var(--muted); padding: 7px 14px; border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 550; }
+  .seg button.active { background: var(--panel-strong); color: var(--text); }
+  .list-tight td, .list-tight th { padding-top: 8px; padding-bottom: 8px; }
+  .kvs { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; font-size: 13.5px; }
+  .kvs dt { color: var(--dim); }
+  .kvs dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .25); border-top-color: #fff; animation: sp 1s linear infinite; display: inline-block; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  footer.site-footer { border-top: 1px solid var(--line); padding: 20px 26px 40px; color: var(--dim); font-size: 12.5px; position: relative; z-index: 1; }
+  .toast-wrap { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 10px; z-index: 20; max-width: 420px; }
+  .toast { background: #0d1018; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 13px; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
+  .toast.good { border-color: rgba(72, 213, 151, .4); }
+  .toast.bad { border-color: rgba(255, 107, 129, .45); }
+  .hero { padding: 26px 28px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(124, 140, 255, .1), rgba(255, 255, 255, .02)); margin-bottom: 22px; }
+  .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 30px; align-items: center; }
+  @media (max-width: 980px) { .hero-grid { grid-template-columns: 1fr; } }
+  .orb-art { width: 190px; height: 190px; margin-left: auto; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fff, #e9ecff 55%, #b9c3f0); box-shadow: 0 0 70px rgba(160, 178, 255, .55); }
+  @media (max-width: 980px) { .orb-art { margin: 0; width: 130px; height: 130px; } }
+  .hidden { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  [hidden] { display: none !important; }
+  .landing-header { min-height: 78px; justify-content: space-between; padding: 14px clamp(22px, 7vw, 118px); }
+  .landing-header .brand { flex-shrink: 0; }
+  .landing-nav { display: flex; align-items: center; justify-content: center; gap: clamp(20px, 4vw, 54px); margin: 0 auto; }
+  .landing-nav a { color: var(--text); font-size: 14px; font-weight: 550; }
+  .landing-nav a:hover { color: var(--accent-2); }
+  .landing-launch { flex-shrink: 0; padding: 10px 18px; }
+  .landing-main { max-width: none; padding: 0; }
+  .landing-hero { min-height: 428px; position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+  .landing-wrap { width: min(1240px, calc(100% - 48px)); margin: 0 auto; }
+  .landing-hero-inner { min-height: 428px; display: flex; align-items: center; position: relative; z-index: 1; padding: 48px 0 52px; }
+  .landing-copy { width: min(520px, 52%); }
+  .landing-eyebrow { color: var(--accent-2); text-transform: uppercase; letter-spacing: .24em; font-size: 11px; font-weight: 650; margin-bottom: 16px; }
+  .landing-title { font-size: clamp(54px, 6vw, 80px); line-height: .94; letter-spacing: -.055em; margin: 0 0 16px; }
+  .landing-lede { color: #c4cce2; font-size: 18px; line-height: 1.45; margin: 0 0 22px; }
+  .landing-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .landing-live { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; margin-top: 22px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 12px rgba(72, 213, 151, .7); }
+  .landing-live.down .live-dot { background: var(--bad); box-shadow: 0 0 12px rgba(255, 107, 129, .7); }
+  .landing-art { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .landing-sphere { position: absolute; top: 112px; right: 29%; width: 164px; height: 164px; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fff, #f5f6ff 70%, #dce2ff); box-shadow: 0 0 38px rgba(178, 193, 255, .75), 0 0 110px rgba(77, 105, 255, .48); }
+  .landing-orbit { position: absolute; width: 1600px; height: 620px; left: 50%; bottom: -486px; transform: translateX(-50%) rotate(-4deg); border: 2px solid transparent; border-top-color: rgba(160, 175, 255, .95); border-radius: 50%; box-shadow: 0 -10px 32px rgba(81, 107, 255, .55); }
+  .landing-features { border-bottom: 1px solid var(--line); }
+  .landing-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); padding: 38px 0; }
+  .landing-feature { min-height: 72px; display: flex; align-items: flex-start; gap: 20px; padding: 0 34px; border-right: 1px solid var(--line); }
+  .landing-feature:first-child { padding-left: 0; }
+  .landing-feature:last-child { padding-right: 0; border-right: 0; }
+  .landing-icon { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-2); background: radial-gradient(circle, rgba(124, 140, 255, .22), rgba(124, 140, 255, .08)); font-size: 25px; }
+  .landing-feature h3 { font-size: 16px; margin: 3px 0 6px; }
+  .landing-feature p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; max-width: 250px; }
+  .landing-ecosystem { padding: 34px 0 52px; }
+  .landing-ecosystem-grid { display: grid; grid-template-columns: 1.25fr repeat(3, 1fr); gap: 24px; align-items: stretch; }
+  .landing-intro { align-self: center; padding-right: 18px; }
+  .landing-intro h2 { font-size: 34px; line-height: 1.08; letter-spacing: -.035em; margin: 0 0 12px; }
+  .landing-intro p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; max-width: 360px; }
+  .landing-card { min-height: 202px; padding: 18px 22px; display: flex; flex-direction: column; align-items: flex-start; }
+  .landing-card .landing-icon { width: 50px; height: 50px; flex-basis: 50px; margin-bottom: 10px; }
+  .landing-card h3 { font-size: 16px; margin-bottom: 7px; }
+  .landing-card p { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 0 0 14px; }
+  .landing-card a { color: var(--accent-2); font-size: 13px; font-weight: 550; margin-top: auto; }
+  .landing-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .landing-footer p { margin: 0; }
+  .landing-footer a { color: var(--accent-2); }
+  @media (max-width: 1000px) {
+    .landing-ecosystem-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .landing-intro { grid-column: 1 / -1; padding: 0 0 4px; }
+    .landing-sphere { right: 17%; }
+  }
+  @media (max-width: 700px) {
+    .landing-header { min-height: 70px; padding: 12px 18px; }
+    .landing-nav { display: none; }
+    .landing-launch { padding: 9px 13px; font-size: 12px; }
+    .landing-wrap { width: min(100% - 36px, 540px); }
+    .landing-hero, .landing-hero-inner { min-height: 450px; }
+    .landing-hero-inner { align-items: flex-start; padding: 56px 0 38px; }
+    .landing-copy { width: 100%; }
+    .landing-title { font-size: clamp(58px, 16vw, 76px); }
+    .landing-lede { font-size: 16px; }
+    .landing-sphere { width: 92px; height: 92px; top: auto; bottom: 25px; right: 13%; }
+    .landing-orbit { width: 920px; height: 380px; bottom: -302px; }
+    .landing-feature-grid { grid-template-columns: 1fr; padding: 12px 0; }
+    .landing-feature, .landing-feature:first-child, .landing-feature:last-child { padding: 17px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+    .landing-feature:last-child { border-bottom: 0; }
+    .landing-ecosystem-grid { grid-template-columns: 1fr; gap: 14px; }
+    .landing-intro { grid-column: auto; }
+    .landing-intro h2 { font-size: 30px; }
+    .landing-card { min-height: 180px; }
+    .landing-footer { align-items: flex-start; flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+
+<header class="site-header landing-header" id="landingHeader">
+  <a class="brand" href="/">
+    <span class="orb" aria-hidden="true"></span>
+    <span class="brand-text"><strong>FULL STOP</strong><small>Blockchain</small></span>
+  </a>
+  <nav class="landing-nav" aria-label="Main navigation">
+    <a href="#network">Network</a>
+    <a href="#ecosystem">Ecosystem</a>
+    <a href="#developers">Developers</a>
+    <a href="#community">Community</a>
+  </nav>
+  <a class="btn ghost landing-launch" href="#/">Launch Explorer <span aria-hidden="true">↗</span></a>
+</header>
+
+<header class="site-header" id="explorerHeader" hidden>
+  <a class="brand" href="#/">
+    <span class="orb" aria-hidden="true"></span>
+    <span class="brand-text"><strong>FULL STOP</strong><small>Blockchain</small></span>
+  </a>
+  <nav class="tabs" id="tabs">
+    <a href="#/" data-tab="network">Network</a>
+    <a href="#/blocks" data-tab="blocks">Blocks</a>
+    <a href="#/supply" data-tab="supply">Supply</a>
+    <a href="#/validators" data-tab="validators">Validators</a>
+    <a href="#/create" data-tab="create">Create assets</a>
+    <a href="#/account" data-tab="account">Wallet</a>
+  </nav>
+  <div class="header-side">
+    <span class="net-pill" id="netStatus">connecting…</span>
+    <button class="btn ghost" id="connectBtn" type="button">Connect wallet</button>
+  </div>
+</header>
+
+<main class="landing-main" id="landingPage">
+  <section class="landing-hero" id="network">
+    <div class="landing-art" aria-hidden="true"><div class="landing-orbit"></div><div class="landing-sphere"></div></div>
+    <div class="landing-wrap landing-hero-inner">
+      <div class="landing-copy">
+        <div class="landing-eyebrow">The next generation of blockchain</div>
+        <h1 class="landing-title">Everything<br>ends here.</h1>
+        <p class="landing-lede">One independent blockchain.<br>Limitless possibilities.</p>
+        <div class="landing-actions">
+          <a class="btn" href="#/blocks">Explore the Network <span aria-hidden="true">→</span></a>
+          <a class="btn ghost" href="#developers">Build on Full Stop <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="landing-live" id="landingLive">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="landingNodeState">Connecting to node…</span>
+          <span aria-hidden="true">·</span>
+          <span>Chain <span id="landingChainId">—</span></span>
+          <span aria-hidden="true">·</span>
+          <span>Block <span id="landingHeight">—</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="landing-features" aria-label="Network features">
+    <div class="landing-wrap landing-feature-grid">
+      <article class="landing-feature">
+        <div class="landing-icon" aria-hidden="true">ϟ</div>
+        <div><h3>Fast by design</h3><p>High throughput, fast finality<br>and low transaction fees.</p></div>
+      </article>
+      <article class="landing-feature">
+        <div class="landing-icon" aria-hidden="true">&lt;/&gt;</div>
+        <div><h3>Built for builders</h3><p>EVM-compatible, developer friendly,<br>with powerful tools.</p></div>
+      </article>
+      <article class="landing-feature">
+        <div class="landing-icon" aria-hidden="true">▱</div>
+        <div><h3>Digital assets for everyone</h3><p>Create tokens, NFTs and more —<br>without the complexity.</p></div>
+      </article>
+    </div>
+  </section>
+  <section class="landing-ecosystem" id="ecosystem">
+    <div class="landing-wrap landing-ecosystem-grid">
+      <div class="landing-intro">
+        <div class="landing-eyebrow">The ecosystem</div>
+        <h2>One network. Endless possibilities.</h2>
+        <p>Full Stop Blockchain gives you the tools to build, create and grow in a decentralized world.</p>
+      </div>
+      <article class="card landing-card">
+        <div class="landing-icon" aria-hidden="true">◇</div>
+        <h3>Explore the blockchain</h3>
+        <p>View blocks, transactions and network activity in real time.</p>
+        <a href="#/">Open Explorer <span aria-hidden="true">→</span></a>
+      </article>
+      <article class="card landing-card">
+        <div class="landing-icon" aria-hidden="true">▤</div>
+        <h3>Create tokens &amp; NFTs</h3>
+        <p>Launch your own digital assets with simple, secure tools.</p>
+        <a href="#/create">Get Started <span aria-hidden="true">→</span></a>
+      </article>
+      <article class="card landing-card" id="developers">
+        <div class="landing-icon" aria-hidden="true">⊞</div>
+        <h3>Build decentralized apps</h3>
+        <p>Connect with the live RPC endpoint and build on EVM-compatible infrastructure.</p>
+        <a href="#/blocks">Explore developer network <span aria-hidden="true">→</span></a>
+      </article>
+    </div>
+  </section>
+</main>
+
+<main id="explorerPage" hidden><section class="view" id="view"></section></main>
+
+<footer class="site-footer landing-footer" id="community">
+  <div class="landing-wrap landing-footer">
+    <p>Full Stop Blockchain · Independent. Open. Built to last.</p>
+    <p><span id="landingFooterStatus">Node connection is checked live.</span> <a id="landingOpenExplorer" href="http://127.0.0.1:7305/" hidden>Open local explorer</a> <button class="btn ghost" id="retryNode" type="button" hidden>Retry connection</button></p>
+  </div>
+</footer>
+
+<footer class="site-footer" id="explorerFooter" hidden>
+  <p id="footerNote">Full Stop Blockchain is a proposed network. Everything on this screen is read from, or written through, the node serving this page. Nothing here is a financial offer, and FSTOP has no guaranteed value.</p>
+</footer>
+
+<div class="toast-wrap" id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+/*
+ * Full Stop explorer + supply dashboard + asset studio.
+ *
+ * One file, no build step, no external requests: it talks to the node with
+ * JSON-RPC over the same origin (so it works behind a proxy or tunnel), and it
+ * degrades to an explanatory empty state when it cannot reach a node - for
+ * example when this file is opened directly from disk.
+ */
+
+const App = {
+  net: null,
+  accounts: [],
+  blockCache: new Map(),
+  timer: null,
+  wallet: null,
+  walletError: null,
+};
+
+const RPC_TIMEOUT_MS = 10_000;
+const rpc = async (method, params = []) => {
+  let res;
+  try {
+    res = await fetch((App.net?.rpcUrl || '') + '/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      throw new Error(`${method} did not respond within ${RPC_TIMEOUT_MS / 1000}s. Check that the devnet RPC node is running, then retry.`);
+    }
+    throw err;
+  }
+  const body = await res.text();
+  if (!res.ok) {
+    const detail = body.trim().slice(0, 160);
+    throw new Error(`${method} returned HTTP ${res.status}${detail ? `: ${detail}` : ''}. Check that the devnet RPC node is healthy.`);
+  }
+  let json;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    const contentType = res.headers.get('content-type') || 'unknown content type';
+    throw new Error(`${method} expected a JSON-RPC response but received ${contentType}: ${body.trim().slice(0, 160) || '(empty response)'}`);
+  }
+  if (json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+  return json.result;
+};
+
+const UNIT = 10n ** 18n;
+const fmtFstop = (raw, digits = 4) => {
+  if (raw === undefined || raw === null) return '—';
+  const v = BigInt(raw);
+  const whole = v / UNIT;
+  const frac = (v % UNIT).toString().padStart(18, '0').slice(0, digits);
+  return `${whole.toLocaleString('en-US')}${frac && frac !== '0'.repeat(digits) ? '.' + frac : ''}`;
+};
+const fmtNum = (n) => Number(n ?? 0).toLocaleString('en-US');
+const short = (h, n = 8) => (!h ? '—' : `${h.slice(0, 2 + n)}…${h.slice(-6)}`);
+const ago = (ms) => {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  return `${Math.round(s / 3600)}h ago`;
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+
+function toast(msg, kind = '') {
+  const node = el(`<div class="toast ${kind}">${msg}</div>`);
+  document.getElementById('toasts').append(node);
+  setTimeout(() => node.remove(), kind === 'bad' ? 9000 : 5200);
+}
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copied'); } catch { toast('Copy is not available here', 'bad'); }
+}
+
+/* ------------------------------------------------------------------ routing */
+const routes = {
+  '': viewNetwork, network: viewNetwork, blocks: viewBlocks, supply: viewSupply,
+  validators: viewValidators, create: viewCreate, account: viewAccount, tx: viewTx, address: viewAddress,
+};
+async function route() {
+  const explorerHeader = document.getElementById('explorerHeader');
+  const explorerPage = document.getElementById('explorerPage');
+  const explorerFooter = document.getElementById('explorerFooter');
+  const landingMode = !location.hash.startsWith('#/');
+  document.getElementById('landingHeader').hidden = !landingMode;
+  document.getElementById('landingPage').hidden = !landingMode;
+  document.getElementById('community').hidden = !landingMode;
+  explorerHeader.hidden = landingMode;
+  explorerPage.hidden = landingMode;
+  explorerFooter.hidden = landingMode;
+  if (landingMode) return;
+
+  const hash = location.hash.replace(/^#\/?/, '');
+  const [name, arg] = hash.split('/');
+  document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('active', a.dataset.tab === (name || 'network')));
+  const fn = routes[name] ?? viewNetwork;
+  const view = document.getElementById('view');
+  view.innerHTML = '<div class="card"><span class="spin"></span> <span class="muted">Loading…</span></div>';
+  try {
+    await fn(view, arg);
+  } catch (err) {
+    view.innerHTML = `<div class="card pad-lg"><h2>Could not load this view</h2><p class="muted">${esc(err.message)}</p>
+      <p class="tiny muted">This app talks to the Full Stop node over JSON-RPC. If you opened the file directly (file://) or the node is not running, start it with <span class="mono">npm run devnet</span> and load the page it prints.</p>
+      <button class="btn ghost" id="retryView" type="button">Retry this view</button></div>`;
+    document.getElementById('retryView').onclick = () => App.net?.rpcUrl ? route() : boot();
+  }
+  clearInterval(App.timer);
+}
+window.addEventListener('hashchange', route);
+
+/* -------------------------------------------------------------------- boot */
+async function boot() {
+  const retryButton = document.getElementById('retryNode');
+  retryButton.disabled = true;
+  retryButton.textContent = 'Checking node…';
+  try {
+    const res = await fetch('/network.json');
+    if (!res.ok) throw new Error(`network configuration returned HTTP ${res.status}`);
+    App.net = await res.json();
+    App.net.live = true;
+    if (!App.net.rpcUrl || !App.net.chainId) throw new Error('network configuration is missing its RPC URL or chain ID.');
+    const [rpcChainId, status, supply] = await Promise.all([
+      rpc('eth_chainId'), rpc('fs_status'), rpc('fs_supply'),
+    ]);
+    if (BigInt(rpcChainId) !== BigInt(App.net.chainId)) {
+      throw new Error(`RPC chain ID ${BigInt(rpcChainId)} does not match explorer network chain ID ${App.net.chainId}.`);
+    }
+    if (BigInt(status.chainId) !== BigInt(App.net.chainId)) {
+      throw new Error(`Node status chain ID ${status.chainId} does not match explorer network chain ID ${App.net.chainId}.`);
+    }
+    document.getElementById('landingLive').classList.remove('down');
+    document.getElementById('netStatus').classList.remove('down');
+    document.getElementById('landingNodeState').textContent = 'Connected to live node';
+    document.getElementById('landingChainId').textContent = App.net.chainId;
+    document.getElementById('landingHeight').textContent = fmtNum(status.height);
+    document.getElementById('landingFooterStatus').textContent =
+      `${fmtNum(status.validators)} validators · ${fmtFstop(supply.totalIssued, 0)} FSTOP issued`;
+    document.getElementById('netStatus').classList.add('live');
+    document.getElementById('netStatus').textContent = `chain ${App.net.chainId} · live`;
+    document.getElementById('connectBtn').onclick = connectWallet;
+    retryButton.hidden = true;
+    retryButton.disabled = false;
+    retryButton.textContent = 'Retry connection';
+    App.walletReady = import('./appkit.bundle.js')
+      .then(({ initializeAppKit }) => {
+        App.wallet = initializeAppKit(App.net);
+        App.wallet.subscribeAccount((account) => {
+          App.accounts = account?.isConnected && account.address ? [account.address] : [];
+          renderWalletButton();
+          if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'account') route();
+        });
+        const account = App.wallet.getAccount();
+        App.accounts = account?.isConnected && account.address ? [account.address] : [];
+        renderWalletButton();
+        return App.wallet;
+      })
+      .catch((err) => {
+        App.walletError = err;
+        console.error('Reown AppKit initialization failed:', err);
+      });
+  } catch (err) {
+    console.error('Full Stop node connection failed:', err);
+    App.net = { chainId: '—', rpcUrl: '', contracts: {}, currency: { ticker: 'FSTOP' } };
+    document.getElementById('landingLive').classList.add('down');
+    const openedFromFile = location.protocol === 'file:';
+    document.getElementById('landingNodeState').textContent = openedFromFile
+      ? 'Open this explorer through the running devnet'
+      : 'Node connection unavailable';
+    document.getElementById('landingFooterStatus').textContent = openedFromFile
+      ? 'An HTML file opened from disk cannot load the node configuration. Start the devnet, then open the explorer URL it prints.'
+      : `Node connection failed: ${err.message}`;
+    document.getElementById('landingOpenExplorer').hidden = !openedFromFile;
+    document.getElementById('netStatus').classList.add('down');
+    document.getElementById('netStatus').textContent = 'no node';
+    document.getElementById('connectBtn').onclick = () => toast('No node to connect to. Run npm run devnet.', 'bad');
+    retryButton.hidden = openedFromFile;
+    retryButton.disabled = false;
+    retryButton.textContent = 'Retry connection';
+    retryButton.onclick = boot;
+  }
+  await route();
+}
+
+/* ------------------------------------------------------------------ wallet */
+async function connectWallet() {
+  try {
+    await App.walletReady;
+    if (!App.wallet) throw new Error(`Wallet connection is unavailable: ${App.walletError?.message || 'AppKit did not initialize.'}`);
+    App.wallet.open(App.accounts.length ? 'Account' : 'Connect');
+  } catch (err) { toast(esc(err.message || String(err)), 'bad'); }
+}
+function renderWalletButton() {
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = App.accounts?.length ? short(App.accounts[0], 5) : 'Connect wallet';
+}
+async function signer() {
+  if (!App.wallet || !App.accounts?.length) throw new Error('Connect a wallet first.');
+  const walletProvider = App.wallet.getWalletProvider();
+  if (!walletProvider) throw new Error('The connected wallet provider is unavailable. Reconnect your wallet.');
+  const { ethers } = await ensureEthers();
+  const provider = new ethers.BrowserProvider(walletProvider, Number(App.net.chainId));
+  return provider.getSigner(App.accounts[0]);
+}
+let ethersPromise = null;
+function ensureEthers() {
+  if (window.ethers) return Promise.resolve(window.ethers);
+  // Optional: only fetched when a wallet transaction is actually attempted, so
+  // the page still works with no network access at all.
+  ethersPromise ??= new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js';
+    s.onload = () => resolve(window.ethers);
+    s.onerror = () => reject(new Error('ethers could not be loaded, so sending transactions is unavailable. Use the CLI (src/cli.js) instead.'));
+    document.head.append(s);
+  });
+  return ethersPromise;
+}
+
+/* ----------------------------------------------------------------- network */
+async function viewNetwork(view) {
+  const [status, supply, peers] = await Promise.all([rpc('fs_status'), rpc('fs_supply'), rpc('net_peerCount').catch(() => '0x0')]);
+  const blocks = await rpc('fs_blocks', [{ count: 8 }]);
+  const power = Number(status.consensus?.totalPower ?? 0);
+  const myPower = Number(status.consensus?.votingPower ?? 0);
+  view.innerHTML = `
+  <div class="hero"><div class="hero-grid">
+    <div>
+      <div class="eyebrow">The next generation of blockchain</div>
+      <h1>Everything<br>ends here.</h1>
+      <p class="lede">An independent Layer 1 with its own validator network, its own state, and the FSTOP coin. This page is that node: live blocks, supply accounting, staking and the asset studio.</p>
+      <div class="row">
+        <button class="btn" id="jumpBlocks">Latest blocks →</button>
+        <button class="btn ghost" id="jumpCreate">Create a token</button>
+      </div>
+    </div>
+    <div class="orb-art" aria-hidden="true"></div>
+  </div></div>
+
+  <div class="grid cols-4">
+    ${card('Height', fmtNum(status.height), `${fmtNum(status.txCount)} transactions in total`)}
+    ${card('Block time', `${(status.consensus?.metrics ? Math.round(1000 / 1.5) : 0) || '1.5'}s`, 'target interval, ~1–2s design band')}
+    ${card('Validators', fmtNum(status.validators), `${fmtNum(power)} total voting power`)}
+    ${card('Fees', `${fmtFstop(BigInt(status.mempool?.minGasPrice ?? 0) * 21000n, 6)} FSTOP`, 'a simple transfer at the floor price')}
+  </div>
+
+  <div class="grid aside" style="margin-top:16px">
+    <div class="card">
+      <div class="row between"><h3>Latest blocks</h3><a class="tiny" href="#/blocks">all blocks →</a></div>
+      ${blocksTable(blocks)}
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Node</h3>
+        <dl class="kvs">
+          <dt>Software</dt><dd class="mono">${esc(status.nodeVersion)}</dd>
+          <dt>Protocol</dt><dd class="mono">${esc(status.protocolVersion)}</dd>
+          <dt>Hardfork</dt><dd class="mono">${esc(status.hardfork)}</dd>
+          <dt>Peers</dt><dd class="num">${fmtNum(parseInt(peers, 16))}</dd>
+          <dt>Role</dt><dd>${status.mining === false ? '<span class="pill dim">full node</span>' : '<span class="pill good">validator</span>'}</div>
+          <dt>Syncing</dt><dd>${status.consensus?.step === 'waiting-for-blocks' ? '<span class="pill warn">sync</span>' : '<span class="pill good">in sync</span>'}</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>This node's stake</h3>
+        <p class="stat-value num">${fmtNum(myPower)}</p>
+        <p class="tiny muted">Voting power of the key this node holds (1 FSTOP bonded = 1 power). A node without a validator key reports 0 and only verifies and serves.</p>
+      </div>
+      <div class="card">
+        <h3>Supply at a glance</h3>
+        <p class="tiny muted">${fmtFstop(supply.totalIssued, 0)} FSTOP issued of ${fmtFstop(supply.maxSupply, 0)} hard cap. ${fmtFstop(supply.burned, 4)} permanently burned.</p>
+        <a class="btn ghost" href="#/supply" style="margin-top:10px">Supply dashboard →</a>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('jumpBlocks').onclick = () => (location.hash = '#/blocks');
+  document.getElementById('jumpCreate').onclick = () => (location.hash = '#/create');
+}
+const card = (label, value, sub) => `<div class="card"><div class="stat-label">${esc(label)}</div><div class="stat-value num">${value}</div><div class="stat-sub">${sub ?? ''}</div></div>`;
+
+function blocksTable(blocks) {
+  if (!blocks?.length) return '<p class="tiny muted">No blocks yet.</p>';
+  return `<table class="list-tight"><thead><tr><th>Height</th><th>Time</th><th>Txs</th><th>Proposer</th></tr></thead><tbody>
+  ${blocks.map((b) => `<tr>
+    <td><a class="hash" href="#/blocks/${b.height}">${fmtNum(b.height)}</a></td>
+    <td class="muted tiny">${esc(ago(new Date(b.time).getTime()))}</td>
+    <td class="num">${fmtNum(b.txCount)}</td>
+    <td><a class="hash" href="#/address/${b.proposer}">${esc(short(b.proposer, 6))}</a></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+/* ------------------------------------------------------------------ blocks */
+async function viewBlocks(view) {
+  const head = await rpc('eth_blockNumber');
+  const from = Math.max(0, parseInt(head, 16) - 24);
+  const blocks = await rpc('fs_blocks', [{ from, count: 25 }]);
+  view.innerHTML = `
+    <div class="eyebrow">Explorer</div><h1>Blocks</h1>
+    <p class="lede">Every block here was produced by a validator and re-executed by this node: the header commits to the EVM state root and to the protocol application hash.</p>
+    <div class="card">${blocksTable(blocks)}</div>`;
+}
+
+async function viewBlock(view, height) {
+  const [b, evm] = await Promise.all([rpc('fs_blocks', [{ from: Number(height), count: 1 }]), rpc('eth_getBlockByNumber', ['0x' + BigInt(height).toString(16), true].slice(0, 2))]);
+  const block = b[0];
+  if (!block) { view.innerHTML = '<div class="card">No block at that height.</div>'; return; }
+  const receipts = await Promise.all((evm?.transactions ?? []).map((t) => rpc('eth_getTransactionReceipt', [typeof t === 'string' ? t : t.hash]).catch(() => null)));
+  view.innerHTML = `
+    <div class="eyebrow">Block ${fmtNum(block.height)}</div>
+    <h1>Block ${fmtNum(block.height)}</h1>
+    <div class="grid cols-2" style="margin-top:18px">
+      <div class="card"><h3>Consensus header</h3><dl class="kvs">
+        <dt>Hash</dt><dd class="hash" data-copy="${block.hash}">${esc(short(block.hash, 12))}</dd>
+        <dt>Parent</dt><dd><a class="hash" href="#/blocks/${block.height - 1}">${esc(short(block.parentHash, 12))}</a></dd>
+        <dt>Proposer</dt><dd><a class="hash" href="#/address/${block.proposer}">${esc(short(block.proposer, 10))}</a></dd>
+        <dt>Round</dt><dd class="num">${fmtNum(block.round)}</dd>
+        <dt>Time</dt><dd class="mono">${esc(new Date(block.time).toISOString())}</dd>
+        <dt>Gas used / limit</dt><dd class="num">${fmtNum(block.gasUsed)} / ${fmtNum(block.gasLimit)}</dd>
+        <dt>Signatures</dt><dd class="num">${fmtNum(block.commits)}</dd>
+        <dt>Evidence</dt><dd class="num">${fmtNum(block.evidence)}</dd>
+      </dl></div>
+      <div class="card"><h3>State commitments</h3><dl class="kvs">
+        <dt>State root</dt><dd class="hash" data-copy="${block.stateRoot}">${esc(short(block.stateRoot, 12))}</dd>
+        <dt>App hash</dt><dd class="hash" data-copy="${block.appHash}">${esc(short(block.appHash, 12))}</dd>
+        <dt>Data root</dt><dd class="hash">${esc(short(evm?.transactionsRoot ?? '—', 12))}</dd>
+        <dt>Receipt root</dt><dd class="hash">${esc(short(evm?.receiptsRoot ?? '—', 12))}</dd>
+      </dl>
+      <p class="tiny muted" style="margin-top:12px">The state root covers contract storage and FSTOP balances; the application hash additionally covers the supply ledger and the validator registry. A validator that computes either differently stops rather than serving wrong data.</p></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Transactions</h3>${txTable(evm?.transactions ?? [], receipts)}</div>`;
+  wireCopyables(view);
+}
+
+function txTable(txs, receipts) {
+  if (!txs.length) return '<p class="tiny muted">Empty block — the chain still produces a block every interval so staking, vesting and reward rules keep running.</p>';
+  return `<table class="list-tight"><thead><tr><th>Tx hash</th><th>From</th><th>To</th><th>Value</th><th>Gas</th><th>Status</th></tr></thead><tbody>
+  ${txs.map((t, i) => {
+    const full = typeof t === 'object';
+    const r = receipts?.[i];
+    return `<tr>
+      <td><a class="hash" href="#/tx/${full ? t.hash : t}">${esc(short(full ? t.hash : t, 10))}</a></td>
+      <td class="hash">${esc(short(full ? t.from : '—', 6))}</td>
+      <td class="hash">${esc(short(full ? t.to : '—', 6))}</td>
+      <td class="num">${full ? fmtFstop(t.value, 4) : '—'}</td>
+      <td class="num">${r ? fmtNum(BigInt(r.gasUsed)) : full ? fmtNum(BigInt(t.gas)) : '—'}</td>
+      <td>${r ? (r.status === '0x1' ? '<span class="pill good">success</span>' : '<span class="pill bad">reverted</span>') : '—'}</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+/* ------------------------------------------------------------------ supply */
+async function viewSupply(view) {
+  const [supply, audit, rewards] = await Promise.all([rpc('fs_supply'), rpc('fs_supplyAudit'), rpc('fs_rewards')]);
+  const max = BigInt(supply.maxSupply);
+  const issued = BigInt(supply.totalIssued);
+  const locked = BigInt(supply.locked);
+  const burned = BigInt(supply.burned);
+  const circ = issued - locked;
+  const pct = (v) => `${((Number(v) / Number(max)) * 100).toFixed(1)}%`;
+  const pools = Object.entries(supply.pools ?? {});
+  view.innerHTML = `
+  <div class="eyebrow">Supply dashboard</div>
+  <h1>FSTOP supply, from the chain itself</h1>
+  <p class="lede">Every number below is computed from protocol state: mint and burn events recorded by the supply ledger, cross-checked against a full walk of the state trie. ${audit.ok ? 'The conservation check passes.' : '<span class="pill bad">invariant violated</span>'}</p>
+
+  <div class="grid cols-4">
+    ${card('Hard cap', fmtFstop(max, 0), 'fixed maximum supply, enforced by protocol rules')}
+    ${card('Total issued', fmtFstop(issued, 0), `${pct(issued)} of the cap`)}
+    ${card('Circulating', fmtFstop(circ, 0), 'issued minus protocol-held balances')}
+    ${card('Permanently burned', fmtFstop(burned, 6), 'removed from supply, not locked')}
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="row between"><h3>Allocation and release</h3><span class="tiny muted">unissued: ${fmtFstop(supply.unissued, 0)} FSTOP</span></div>
+    <div class="stack">
+      ${pools.map(([key, p]) => {
+        const alloc = BigInt(p.allocation);
+        const done = BigInt(p.issued);
+        const rest = BigInt(p.locked ?? 0);
+        return `<div>
+          <div class="row between"><strong style="font-size:14px">${esc(p.label)}</strong><span class="tiny muted mono">${esc(p.mode)}</span></div>
+          <div class="bar" style="margin:7px 0 5px"><span style="width:${(Number(done) / Number(max)) * 100}%"></span></div>
+          <div class="row between tiny muted"><span>${fmtFstop(done, 0)} issued · ${fmtFstop(rest, 0)} locked</span><span>${pct(alloc)} of cap</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <p class="tiny muted" style="margin-top:14px">“Issued” means the protocol minted it. “Locked” means it sits in a protocol module account with a release schedule; the schedule is consensus state, not a promise from a website.</p>
+  </div>
+
+  <div class="grid cols-3" style="margin-top:16px">
+    ${card('Validator rewards paid', fmtFstop(supply.totals.validatorRewards ?? 0, 4), 'from the block subsidy and fee share')}
+    ${card('Community rewards paid', fmtFstop(supply.totals.communityRewards ?? 0, 4), `${fmtNum(supply.communityRound?.claims ?? 0)} claims this round`)}
+    ${card('Fee revenue to date', fmtFstop(supply.totals.feeRevenue ?? 0, 8), `${fmtFstop(supply.totals.feesBurned ?? 0, 8)} of it burned`)}
+  </div>
+
+  <div class="grid cols-2" style="margin-top:16px">
+    <div class="card"><h3>Module balances</h3><dl class="kvs">
+      <dt>Validator reward pool</dt><dd class="num">${fmtFstop(rewards.validatorPool, 4)}</dd>
+      <dt>Community pool</dt><dd class="num">${fmtFstop(rewards.communityPool, 4)}</dd>
+      <dt>Vesting module</dt><dd class="num">${fmtFstop(rewards.vesting, 4)}</dd>
+      <dt>Fee collector</dt><dd class="num">${fmtFstop(rewards.feeCollector, 8)}</dd>
+    </dl></div>
+    <div class="card"><h3>Conservation audit</h3><dl class="kvs">
+      <dt>On-chain balance sum</dt><dd class="num">${fmtFstop(audit.onchainTotal, 0)}</dd>
+      <dt>Ledger minted − burned</dt><dd class="num">${fmtFstop(audit.ledgerTotal, 0)}</dd>
+      <dt>Difference</dt><dd class="num">${fmtFstop(audit.difference, 0)}</dd>
+      <dt>Accounts in state</dt><dd class="num">${fmtNum(audit.accounts)}</dd>
+      <dt>Headroom to cap</dt><dd class="num">${fmtFstop(audit.headroom, 0)}</dd>
+    </dl>
+    <p class="tiny muted" style="margin-top:10px">${audit.ok ? 'Sum of every balance equals what the ledger minted minus what it burned: no coin appeared or vanished outside a protocol rule.' : 'Mismatch: stop and investigate.'}</p></div>
+  </div>`;
+}
+
+/* -------------------------------------------------------------- validators */
+async function viewValidators(view) {
+  const [vals, params, evidence, status] = await Promise.all([rpc('fs_validators'), rpc('fs_stakingParams'), rpc('fs_evidence'), rpc('fs_status')]);
+  const total = vals.reduce((a, v) => a + BigInt(v.totalStake), 0n);
+  view.innerHTML = `
+  <div class="eyebrow">Security</div><h1>Validators and delegation</h1>
+  <p class="lede">The set that signs blocks. Power is staked FSTOP; a commit needs more than two thirds of it. Rewards are distributed by stake weight at every boundary, minus the validator's commission.</p>
+  <div class="card"><table><thead><tr><th>Moniker</th><th>Operator</th><th>Status</th><th>Power</th><th>Commission</th><th>Delegators</th><th>Missed</th></tr></thead><tbody>
+  ${vals.map((v) => `<tr>
+    <td><strong>${esc(v.moniker)}</strong></td>
+    <td><a class="hash" href="#/address/${v.operator}">${esc(short(v.operator, 8))}</a></td>
+    <td>${pill(v.status)}</td>
+    <td class="num">${fmtNum(v.power)}<span class="tiny muted"> · ${fmtFstop(v.totalStake, 0)} FSTOP</span></td>
+    <td class="num">${(Number(v.commissionBps) / 100).toFixed(1)}%</td>
+    <td class="num">${v.delegators.length}</td>
+    <td class="num">${fmtNum(v.missedBlocks)}${v.jailReason ? ` <span class="pill warn">${esc(v.jailReason)}</span>` : ''}</td>
+  </tr>`).join('') || '<tr><td colspan="7" class="muted">No validators bonded yet.</td></tr>'}
+  </tbody></table></div>
+
+  <div class="grid cols-4" style="margin-top:16px">
+    ${card('Bonded total', fmtFstop(total, 0), 'self-bonds plus delegations')}
+    ${card('Minimum self-bond', fmtFstop(params.min_self_stake ?? params.minSelfStake, 0), 'to join the set')}
+    ${card('Unbonding', fmtNum(params.unbonding_blocks ?? params.unbondingBlocks) + ' blocks', 'before a withdrawal is paid')}
+    ${card('Active set cap', fmtNum(params.max_active_validators ?? params.maxActiveValidators), 'highest-stake validators')}
+  </div>
+
+  <div class="grid cols-2" style="margin-top:16px">
+    <div class="card"><h3>Delegate from this wallet</h3>
+      <div class="stack">
+        <div class="field"><label for="dOp">Validator operator</label><select id="dOp">${vals.map((v) => `<option value="${v.operator}">${esc(v.moniker)} — ${fmtNum(v.power)} power</option>`).join('')}</select></div>
+        <div class="field"><label for="dAmt">Amount (FSTOP)</label><input id="dAmt" value="10" /></div>
+        <button class="btn" id="dBtn">Bond</button>
+        <p class="tiny muted">A delegation is a transfer of FSTOP to the protocol escrow with an instruction attached; the escrow's balance is checked against recorded entitlements in every block.</p>
+      </div>
+    </div>
+    <div class="card"><h3>Escrow coverage</h3>
+      <dl class="kvs">
+        <dt>Escrow holds</dt><dd class="num">${fmtFstop(params.escrowBalance, 0)}</dd>
+        <dt>Entitlements total</dt><dd class="num">${fmtFstop(params.escrowRequired, 0)}</dd>
+        <dt>Unbonding queue</dt><dd class="num">${fmtNum(vals.length && status.validators)}</dd>
+      </dl>
+      <h3 style="margin-top:16px">Evidence</h3>
+      ${evidence.length ? `<table class="list-tight"><tbody>${evidence.slice(0, 6).map((e) => `<tr><td>${pill(e.type === 'double-sign' ? 'tombstoned' : e.type, e.type === 'double-sign' ? 'bad' : 'warn')}</td><td class="hash">${esc(short(e.operator ?? e.validator ?? '—', 8))}</td><td class="tiny muted">height ${fmtNum(e.height)}</td><td class="num tiny">${fmtFstop(e.amount ?? e.slashed ?? 0, 2)}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No slashing evidence has been committed.</p>'}
+    </div>
+  </div>`;
+  document.getElementById('dBtn').onclick = async () => {
+    try {
+      const s = await signer();
+      const { ethers } = await ensureEthers();
+      const iface = new ethers.Interface(['function bond(address operator)']);
+      const module = App.net.contracts.protocol_module ?? '0x00000000000000000000000000000000F5700001';
+      const tx = await s.sendTransaction({ to: module, data: iface.encodeFunctionData('bond', [document.getElementById('dOp').value]), value: ethers.parseUnits(document.getElementById('dAmt').value, 18) });
+      toast('Bond submitted · ' + short(tx.hash, 6));
+      await tx.wait();
+      toast('Bond confirmed', 'good');
+      route();
+    } catch (err) { toast(esc(err.shortMessage || err.message || String(err)), 'bad'); }
+  };
+}
+const pill = (status, kind) => `<span class="pill ${kind ?? (status === 'bonded' ? 'good' : status === 'jailed' || status === 'tombstoned' ? 'bad' : 'warn')}">${esc(status)}</span>`;
+
+/* -------------------------------------------------------------- asset studio */
+const ABIS = {};
+async function abiFor(name) {
+  if (ABIS[name]) return ABIS[name];
+  const g = await rpc('fs_genesis');
+  let abi = g.contract_artifacts?.[name]?.abi;
+  if (!abi) {
+    const response = await fetch('/contract-abis.json');
+    if (!response.ok) throw new Error(`could not load the local ABI for ${name} (HTTP ${response.status})`);
+    const { abis } = await response.json();
+    abi = abis?.[name];
+  }
+  if (!abi) throw new Error(`ABI for ${name} is missing from both this genesis and the node's compiled artifacts`);
+  ABIS[name] = abi;
+  return abi;
+}
+
+async function viewCreate(view) {
+  const g = await rpc('fs_genesis');
+  const c = g.system_contracts ?? {};
+  const assets = await rpc('fs_assets', [{ limit: 12 }]).catch(() => []);
+  view.innerHTML = `
+  <div class="eyebrow">Asset studio</div><h1>Create a token, a collection, or a multi-token</h1>
+  <p class="lede">These forms build a transaction that deploys one of the reviewed templates and registers it with the chain's asset registry. No Solidity required, and no hidden privileges: every switch you can see is a switch the contract actually has.</p>
+  <div class="notice warn">Deploying an asset does not create liquidity, a market, a listing, or value, and it is not an endorsement by this network. Ownership and mint rights below are permanent unless you give them away.</div>
+
+  <div class="seg" id="kindSeg" style="margin:16px 0">
+    <button data-kind="erc20" class="active">Fungible token (ERC-20)</button>
+    <button data-kind="erc721">NFT collection (ERC-721)</button>
+    <button data-kind="erc1155">Multi-token (ERC-1155)</button>
+  </div>
+
+  <div class="grid aside">
+    <div class="card pad-lg" id="formHost"></div>
+    <div class="stack">
+      <div class="card"><h3>What your asset will look like</h3><div id="preview" class="mono tiny"></div></div>
+      <div class="card"><h3>Recent assets created here</h3>
+        ${assets.length ? `<table class="list-tight"><tbody>${assets.map((a) => `<tr><td><strong>${esc(a.name)}</strong><div class="tiny muted mono">${esc(short(a.contractAddress, 8))}</div></td><td>${pill(a.kind === 1 ? 'ERC-20' : a.kind === 2 ? 'ERC-721' : 'ERC-1155', 'dim')}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nothing registered yet.</p>'}
+      </div>
+      <div class="card"><h3>Contracts</h3><dl class="kvs">
+        <dt>Registry</dt><dd class="hash" data-copy="${c.asset_registry}">${esc(short(c.asset_registry, 8))}</dd>
+        <dt>ERC-20 factory</dt><dd class="hash">${esc(short(c.erc20_factory, 8))}</dd>
+        <dt>ERC-721 factory</dt><dd class="hash">${esc(short(c.erc721_factory, 8))}</dd>
+        <dt>ERC-1155 factory</dt><dd class="hash">${esc(short(c.erc1155_factory, 8))}</dd>
+      </dl><p class="tiny muted" style="margin-top:10px">The registry is owned by the protocol module account after genesis, so no key can add a factory or rewrite the list later.</p></div>
+    </div>
+  </div>`;
+
+  const forms = {
+    erc20: () => `<div class="grid cols-2">
+        <div class="field"><label>Name</label><input id="f_name" placeholder="Community Coin" /></div>
+        <div class="field"><label>Symbol</label><input id="f_symbol" placeholder="CMC" maxlength="12" /></div>
+        <div class="field"><label>Decimals</label><input id="f_decimals" type="number" value="18" min="0" max="18" /></div>
+        <div class="field"><label>Initial supply</label><input id="f_supply" type="number" value="1000000" /></div>
+        <div class="field"><label>Maximum supply (0 = uncapped)</label><input id="f_max" type="number" value="0" /></div>
+        <div class="field"><label>Supply recipient (optional)</label><input id="f_recipient" placeholder="0x…" /></div>
+      </div>
+      <div class="row" style="margin-top:14px;gap:22px">
+        <label class="row tiny" style="text-transform:none"><input type="checkbox" id="f_mint" style="width:auto" /> owner can mint more later</label>
+        <label class="row tiny" style="text-transform:none"><input type="checkbox" id="f_burn" style="width:auto" /> holders can burn</label>
+        <label class="row tiny" style="text-transform:none"><input type="checkbox" id="f_restrict" style="width:auto" /> allowlist transfers (restrictive)</label>
+      </div>
+      <div class="notice bad hidden" id="f_warn"></div>`,
+    erc721: () => `<div class="grid cols-2">
+        <div class="field"><label>Collection name</label><input id="f_name" placeholder="Full Stop Punks" /></div>
+        <div class="field"><label>Symbol</label><input id="f_symbol" placeholder="FSP" maxlength="12" /></div>
+        <div class="field"><label>Max supply (0 = open)</label><input id="f_max" type="number" value="10000" /></div>
+        <div class="field"><label>Collection metadata URI</label><input id="f_uri" placeholder="ipfs://…" /></div>
+      </div>
+      <p class="tiny muted" style="margin-top:12px">Per-token metadata is stored on-chain as the string you set when minting, and it usually <em>references</em> external storage. If that gateway disappears, the token survives and the artwork reference breaks — pin what matters.</p>`,
+    erc1155: () => `<div class="grid cols-2">
+        <div class="field"><label>Collection name</label><input id="f_name" placeholder="Full Stop Passes" /></div>
+        <div class="field"><label>URI template ({id} is substituted)</label><input id="f_uri" value="ipfs://__CID__/{id}.json" /></div>
+      </div>
+      <p class="tiny muted" style="margin-top:12px">One contract, many token types: use a supply of 1 for a single edition, or more for a fungible type inside the same collection.</p>`,
+  };
+
+  let kind = 'erc20';
+  const paint = () => {
+    const titles = { erc20: 'Fungible token (ERC-20)', erc721: 'NFT collection (ERC-721)', erc1155: 'Multi-token collection (ERC-1155)' };
+    document.getElementById('formHost').innerHTML = `
+      <div class="row between" style="margin-bottom:12px"><h3>${titles[kind]}</h3><span class="tiny muted">signed by your wallet, sent to the factory</span></div>
+      ${forms[kind]()}
+      <div class="row" style="margin-top:18px"><button class="btn" id="deployBtn">Deploy and register</button><span class="tiny muted" id="gasHint"></span></div>`;
+    document.getElementById('deployBtn').onclick = deploy;
+    ['f_name', 'f_symbol', 'f_max', 'f_supply', 'f_mint'].forEach((id) => {
+      const node = document.getElementById(id);
+      if (node) node.oninput = preview;
+    });
+    preview();
+  };
+  const preview = () => {
+    const val = (id) => document.getElementById(id)?.value ?? '';
+    const check = (id) => !!document.getElementById(id)?.checked;
+    const lines = kind === 'erc20'
+      ? [`contract = new FSTOPERC20("${val('f_name') || '…'}", "${val('f_symbol') || '…'}", ${val('f_decimals') || 18}, ${val('f_supply') || 0}, max=${val('f_max') || 0}, mintable=${check('f_mint')}, burnable=${check('f_burn')}, allowlist=${check('f_restrict')})`, `owner = you`, `registry.register(kind = ERC20)`]
+      : kind === 'erc721'
+        ? [`contract = new FSTOPERC721("${val('f_name') || '…'}", "${val('f_symbol') || '…'}", max=${val('f_max') || 0}, uri="${val('f_uri') || '…'}")`, `minting: only you, forever, up to the cap`, `registry.register(kind = ERC721)`]
+        : [`contract = new FSTOPERC1155("${val('f_name') || '…'}", "${val('f_uri') || '…'}")`, `mint/batch mint: only you`, `registry.register(kind = ERC1155)`];
+    document.getElementById('preview').innerHTML = lines.map((l) => `&gt; ${esc(l)}`).join('<br>');
+    const warn = document.getElementById('f_warn');
+    if (warn) {
+      const risky = kind === 'erc20' && (check('f_mint') || Number(val('f_max')) === 0);
+      warn.classList.toggle('hidden', !risky);
+      warn.innerHTML = 'You are keeping an unlimited mint right (no cap) or the ability to mint more at any time. Anyone buying this token can be diluted by you. That is disclosed here and on-chain by <span class="mono">permissions()</span>.';
+    }
+  };
+  document.querySelectorAll('#kindSeg button').forEach((b) => (b.onclick = () => {
+    kind = b.dataset.kind;
+    document.querySelectorAll('#kindSeg button').forEach((x) => x.classList.toggle('active', x === b));
+    paint();
+  }));
+  paint();
+
+  async function deploy() {
+    try {
+      const { ethers } = await ensureEthers();
+      const s = await signer();
+      const val = (id) => document.getElementById(id)?.value ?? '';
+      const check = (id) => !!document.getElementById(id)?.checked;
+      let to, data;
+      if (kind === 'erc20') {
+        const abi = await abiFor('FullStopERC20Factory');
+        const iface = new ethers.Interface(abi);
+        to = App.net.contracts.erc20_factory;
+        data = iface.encodeFunctionData('createToken', [{
+          name: val('f_name'), symbol: val('f_symbol'), decimals: Number(val('f_decimals') || 18),
+          initialSupply: ethers.parseUnits(String(val('f_supply') || 0), Number(val('f_decimals') || 18)),
+          maxSupply: Number(val('f_max')) ? ethers.parseUnits(String(val('f_max')), Number(val('f_decimals') || 18)) : 0n,
+          mintable: check('f_mint'), burnable: check('f_burn'), transferRestricted: check('f_restrict'),
+          supplyRecipient: val('f_recipient') || (await s.getAddress()),
+        }]);
+      } else if (kind === 'erc721') {
+        const iface = new ethers.Interface(await abiFor('FullStopERC721Factory'));
+        to = App.net.contracts.erc721_factory;
+        data = iface.encodeFunctionData('createCollection', [{ name: val('f_name'), symbol: val('f_symbol'), maxSupply: BigInt(val('f_max') || 0), contractURI: val('f_uri') }]);
+      } else {
+        const iface = new ethers.Interface(await abiFor('FullStopERC1155Factory'));
+        to = App.net.contracts.erc1155_factory;
+        data = iface.encodeFunctionData('createCollection', [val('f_name'), val('f_uri')]);
+      }
+      toast('Sending deployment…');
+      const tx = await s.sendTransaction({ to, data });
+      const rc = await tx.wait();
+      toast(rc.status ? 'Asset created and registered' : 'Deployment reverted', rc.status ? 'good' : 'bad');
+      route();
+    } catch (err) { toast(esc(err.shortMessage || err.reason || err.message || String(err)), 'bad'); }
+  }
+  wireCopyables(view);
+}
+
+/* -------------------------------------------------------------------- wallet */
+async function viewAccount(view) {
+  const addr0 = App.accounts?.[0];
+  if (!addr0) {
+    view.innerHTML = `<div class="eyebrow">Wallet</div><h1>Connect to act</h1>
+      <p class="lede">This tab reads your account and lets you move FSTOP, bond to a validator, or claim testnet coin from the faucet.</p>
+      <div class="card"><button class="btn" onclick="document.getElementById('connectBtn').click()">Connect wallet</button>
+      <p class="tiny muted" style="margin-top:12px">No browser wallet? The same operations are available from the CLI: <span class="mono">node src/cli.js transfer --to 0x… --amount 5</span></p></div>`;
+    return;
+  }
+  const [bal, nonce, code, supply] = await Promise.all([
+    rpc('eth_getBalance', [addr0, 'latest']), rpc('eth_getTransactionCount', [addr0, 'latest']),
+    rpc('eth_getCode', [addr0, 'latest']), rpc('fs_supply'),
+  ]);
+  view.innerHTML = `<div class="eyebrow">Wallet</div><h1>Your account</h1>
+    <div class="grid cols-4">
+      ${card('Balance', fmtFstop(bal, 4), 'FSTOP')}
+      ${card('Nonce', fmtNum(nonce), 'next transaction number')}
+      ${card('Type', code === '0x' ? 'externally owned' : 'contract', 'only an EOA can sign')}
+      ${card('Network', esc(String(App.net.chainId)), 'chain id this page is talking to')}
+    </div>
+    <div class="grid cols-2" style="margin-top:16px">
+      <div class="card"><h3>Address</h3><p class="hash" data-copy="${addr0}">${esc(addr0)}</p>
+        <div class="row" style="margin-top:10px"><button class="btn ghost" id="copyAddr">Copy</button><a class="btn ghost" href="#/address/${addr0}">View in explorer</a></div></div>
+      <div class="card"><h3>Send FSTOP</h3>
+        <div class="stack">
+          <div class="field"><label>To</label><input id="s_to" placeholder="0x…" /></div>
+          <div class="field"><label>Amount (FSTOP)</label><input id="s_amt" value="1" /></div>
+          <button class="btn" id="s_btn">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Testnet faucet</h3>
+      <p class="tiny muted">The faucet signs an ordinary transfer from its own funded account — it cannot mint. Claims are limited per address and per window.</p>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="f_btn">Request ${fmtFstop(App.net.faucet?.amount ?? 25n * UNIT, 0)} FSTOP</button></div>
+    </div>`;
+  document.getElementById('copyAddr').onclick = () => copy(addr0);
+  document.getElementById('s_btn').onclick = async () => {
+    try {
+      const { ethers } = await ensureEthers();
+      const s = await signer();
+      const tx = await s.sendTransaction({ to: document.getElementById('s_to').value, value: ethers.parseUnits(document.getElementById('s_amt').value, 18) });
+      toast('Sent · ' + short(tx.hash, 6));
+      const rc = await tx.wait();
+      toast(rc.status ? 'Confirmed in block ' + rc.blockNumber : 'Reverted', rc.status ? 'good' : 'bad');
+      route();
+    } catch (err) { toast(esc(err.shortMessage || err.reason || err.message || String(err)), 'bad'); }
+  };
+  document.getElementById('f_btn').onclick = async () => {
+    try {
+      const r = await rpc('fs_faucet', [App.accounts[0]]);
+      toast('Faucet queued ' + fmtFstop(r.amount, 0) + ' FSTOP · ' + short(r.hash, 6), 'good');
+    } catch (err) { toast(esc(err.message), 'bad'); }
+  };
+  wireCopyables(view);
+}
+
+async function viewAddress(view, addr0) {
+  const [acct, txs] = await Promise.all([rpc('fs_account', [addr0]), rpc('fs_blocks', [{ count: 12 }])]);
+  view.innerHTML = `<div class="eyebrow">Account</div><h1 class="mono" style="font-size:20px;word-break:break-all">${esc(addr0)}</h1>
+    <div class="grid cols-4" style="margin-top:14px">
+      ${card('Balance', fmtFstop(acct.balance, 4), acct.ticker ?? 'FSTOP')}
+      ${card('Nonce', fmtNum(acct.nonce), 'transactions sent')}
+      ${card('Kind', acct.isContract ? 'contract' : 'externally owned', 'code ' + (acct.isContract ? 'present' : 'absent'))}
+      ${card('Code hash', esc(short(acct.codeHash, 6)), 'keccak of the deployed bytecode')}
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Recent network activity</h3><p class="tiny muted">Per-address transaction history is served by the indexer in a full deployment; this node indexes by block, so browse <a href="#/blocks">blocks</a>.</p></div>`;
+}
+
+async function viewTx(view, hash) {
+  const [tx, rc] = await Promise.all([rpc('eth_getTransactionByHash', [hash]), rpc('eth_getTransactionReceipt', [hash])]);
+  if (!tx) { view.innerHTML = `<div class="card">This node has not seen <span class="mono">${esc(hash)}</span>.</div>`; return; }
+  const g = await rpc('fs_genesis');
+  const sysModule = g.system_contracts?.protocol_module;
+  view.innerHTML = `<div class="eyebrow">Transaction</div><h1 style="font-size:20px" class="mono">${esc(hash)}</h1>
+  <div class="grid cols-2" style="margin-top:16px">
+    <div class="card"><h3>Transaction</h3><dl class="kvs">
+      <dt>From</dt><dd class="hash">${esc(short(tx.from, 10))}</dd>
+      <dt>To</dt><dd class="hash">${tx.to ? esc(short(tx.to, 10)) : '<span class="pill dim">contract creation</span>'}</dd>
+      <dt>Value</dt><dd class="num">${fmtFstop(tx.value, 6)} FSTOP</dd>
+      <dt>Nonce</dt><dd class="num">${fmtNum(tx.nonce)}</dd>
+      <dt>Gas limit</dt><dd class="num">${fmtNum(BigInt(tx.gas))}</dd>
+      <dt>Gas price</dt><dd class="num">${fmtNum(BigInt(tx.gasPrice ?? tx.maxFeePerGas ?? 0))} wei</dd>
+      <dt>Type</dt><dd class="mono">${tx.type === '0x0' ? 'legacy' : tx.type === '0x1' ? 'access list (EIP-2930)' : tx.type === '0x2' ? 'fee market (EIP-1559)' : esc(tx.type)}</dd>
+      <dt>Calldata</dt><dd class="mono">${tx.input === '0x' ? 'none' : esc(tx.input.slice(0, 34)) + '… (' + ((tx.input.length - 2) / 2) + ' bytes)'}</dd>
+      ${tx.to?.toLowerCase() === sysModule?.toLowerCase() ? `<dt>Protocol action</dt><dd class="mono">${esc(decodeSystem(tx.input))}</dd>` : ''}
+    </dl></div>
+    <div class="card"><h3>Receipt</h3>
+      ${rc ? `<dl class="kvs">
+        <dt>Status</dt><dd>${rc.status === '0x1' ? '<span class="pill good">success</span>' : '<span class="pill bad">reverted</span>'}</dd>
+        <dt>Block</dt><dd><a class="hash" href="#/blocks/${parseInt(rc.blockNumber, 16)}">${fmtNum(BigInt(rc.blockNumber))}</a></dd>
+        <dt>Gas used</dt><dd class="num">${fmtNum(BigInt(rc.gasUsed))}</dd>
+        <dt>Effective price</dt><dd class="num">${fmtNum(BigInt(rc.effectiveGasPrice))} wei</dd>
+        <dt>Fee paid</dt><dd class="num">${fmtFstop(BigInt(rc.gasUsed) * BigInt(rc.effectiveGasPrice), 8)} FSTOP</dd>
+        <dt>Contract</dt><dd class="hash">${rc.contractAddress ? esc(short(rc.contractAddress, 10)) : '—'}</dd>
+        <dt>Logs</dt><dd class="num">${rc.logs.length}</dd>
+      </dl>${rc.logs.length ? `<h3 style="margin-top:16px">Events</h3>${rc.logs.map((l) => `<div class="card" style="margin-bottom:8px"><div class="tiny muted">address <span class="mono">${esc(short(l.address, 8))}</span> · topic0 <span class="mono">${esc(short(l.topics?.[0], 10))}</span></div><div class="mono tiny" style="margin-top:6px;word-break:break-all">${esc(l.data)}</div></div>`).join('')}` : ''}`
+        : '<p class="tiny muted">Not yet included in a block.</p>'}
+    </div>
+  </div>`;
+}
+function decodeSystem(data) {
+  const sel = (data || '').slice(0, 10);
+  const names = { '0x247ce85b': 'bond(operator)', '0xa5d059ca': 'unbond(operator, amount)', '0xae2b3e83': 'registerValidator(moniker, consensusKey, commission)', '0x5646d2c4': 'submitContribution(id, beneficiary, amount, reference)', '0x059b02fe': 'reviewContribution(id, approve)', '0x92d1b784': 'rebond(operator, amount)', '0xf679d305': 'unjail()', '0xc524a0af': 'fundCommunity(amount)' };
+  return names[sel] ?? 'unknown selector ' + sel;
+}
+
+function wireCopyables(root) {
+  root.querySelectorAll('[data-copy]').forEach((n) => (n.onclick = () => copy(n.dataset.copy)));
+}
+
+document.getElementById('retryNode').onclick = boot;
+boot();
+</script>
+</body>
+</html>
