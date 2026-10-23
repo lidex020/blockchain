@@ -1,5 +1,10 @@
 node_modules/
 data/
+keys/
+scratch/
+uploads/
+coverage/
+dist/
 
 .env
 .env.*
@@ -7,6 +12,13 @@ data/
 
 *.log
 *.pid
+*.tmp
+*.swp
 *.key
 *.pem
 *.keystore
+*.secret
+*.seed
+*.mnemonic
+probe-tmp.cjs
+.DS_Store
