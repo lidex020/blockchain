@@ -103,13 +103,13 @@ block is re-run against the finished state.
 
 | Supply check | Value | Why it matters |
 |---|---|---|
-| Hard cap | 100,000,000 FSTOP | a protocol constant, asserted on every mint |
-| Issued | 75,000,005.8 FSTOP | sum of protocol mints since genesis |
-| Burned | 0.0110434 FSTOP | fee burn plus slash burn; permanently removed |
-| Unissued | 24,999,994.2 FSTOP | head-room left under the cap |
+| Hard cap | 100,000,000 LDX | a protocol constant, asserted on every mint |
+| Issued | 75,000,005.8 LDX | sum of protocol mints since genesis |
+| Burned | 0.0110434 LDX | fee burn plus slash burn; permanently removed |
+| Unissued | 24,999,994.2 LDX | head-room left under the cap |
 | Issued as % of cap | 75% | the cap is a ceiling, not a schedule |
-| Conservation | holds: 75,000,005.788957 FSTOP on chain = 75,000,005.788957 FSTOP minted minus burned | the node walks the whole state trie and asserts sum(balances) === minted - burned |
-| Staking escrow | exact: the module holds 20,000 FSTOP against 20,000 FSTOP of recorded bonds |
+| Conservation | holds: 75,000,005.788957 LDX on chain = 75,000,005.788957 LDX minted minus burned | the node walks the whole state trie and asserts sum(balances) === minted - burned |
+| Staking escrow | exact: the module holds 20,000 LDX against 20,000 LDX of recorded bonds |
 
 
 ## 7. What these numbers do not say

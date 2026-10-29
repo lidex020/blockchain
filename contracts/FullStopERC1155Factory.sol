@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./FSTOPERC1155.sol";
+import "./LDXERC1155.sol";
 import "./FullStopAssetRegistry.sol";
 
 /**
@@ -21,7 +21,7 @@ contract FullStopERC1155Factory {
     }
 
     function createCollection(string calldata name, string calldata uriTemplate) external returns (address asset) {
-        asset = address(new FSTOPERC1155(name, uriTemplate, msg.sender));
+        asset = address(new LDXERC1155(name, uriTemplate, msg.sender));
         registry.register(asset, FullStopAssetRegistry.Kind.ERC1155, msg.sender, name, "");
         emit MultiTokenCreated(asset, msg.sender, name, uriTemplate);
     }

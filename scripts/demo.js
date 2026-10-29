@@ -183,7 +183,7 @@ async function main() {
     }
 
     // ---- 4. native transfer, and where the fee went ----------------------
-    step('send FSTOP, then check the fee was burned');
+    step('send LDX, then check the fee was burned');
     const alice = keyFile('alice');
     const aliceAddr = readFile(alice).address;
     const burnBefore = BigInt((await rpc(url, 'fs_supply')).burned);
@@ -275,7 +275,7 @@ async function main() {
         '      no evidence submitted against a live node, no crash during a commit',
         `    · the code path is a Node.js reference implementation (see docs/ARCHITECTURE.md),`,
         '      and it is not audited; see docs/SECURITY.md for the threat model',
-        '    · nothing here says anything about the value of FSTOP; burns do not create value',
+        '    · nothing here says anything about the value of LDX; burns do not create value',
       ].join('\n') + '\n'
     );
   } finally {

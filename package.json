@@ -1,7 +1,7 @@
 {
   "name": "fullstop-blockchain",
   "version": "0.1.0",
-  "description": "Full Stop Blockchain - an independent, public, EVM-compatible Layer 1 with the native coin FSTOP",
+  "description": "Lidex - an independent, public, EVM-compatible Layer 1 with the native coin LDX",
   "license": "MIT",
   "private": true,
   "type": "commonjs",

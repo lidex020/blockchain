@@ -59,7 +59,7 @@ if (arg('help', false)) {
       '  --rpc-url <url>         benchmark an already-running node instead of starting one',
       '  --no-sync-test          skip the cold-node sync measurement (it costs up to 3 minutes)',
       '  --node-heap <mb>        --max-old-space-size for each node process (default 768)',
-      '  --fund-each <fstop>     FSTOP paid to each load account at setup (default 0.5)',
+      '  --fund-each <ldx>       LDX paid to each load account at setup (default 0.5)',
       '  --rpc-rate-limit <n>    JSON-RPC budget per client on the nodes started here (default 60000)',
       '  --keep                  leave the network running after the run',
       '',
@@ -328,16 +328,16 @@ function renderReport({ env, cfg, summary, blocks, supply, audit, sync, rejectio
     supply.staking?.escrowHeld === undefined || supply.staking.escrowHeld === null
       ? 'n/a'
       : BigInt(supply.staking.escrowHeld) === BigInt(supply.staking.escrowRequired)
-        ? `exact: the module holds ${fmt(Number(BigInt(supply.staking.escrowHeld)) / 1e18, 4)} FSTOP against ${fmt(Number(BigInt(supply.staking.escrowRequired)) / 1e18, 4)} FSTOP of recorded bonds`
+        ? `exact: the module holds ${fmt(Number(BigInt(supply.staking.escrowHeld)) / 1e18, 4)} LDX against ${fmt(Number(BigInt(supply.staking.escrowRequired)) / 1e18, 4)} LDX of recorded bonds`
         : `MISMATCH: holds ${supply.staking.escrowHeld}, owes ${supply.staking.escrowRequired}`;
   const supplyRows = [
     ['Supply check', 'Value', 'Why it matters'],
-    ['Hard cap', `${fmt(supply.maxSupplyCoins, 0)} FSTOP`, 'a protocol constant, asserted on every mint'],
-    ['Issued', `${fmt(supply.totalIssuedCoins, 6)} FSTOP`, 'sum of protocol mints since genesis'],
-    ['Burned', `${fmt(supply.burnedCoins, 8)} FSTOP`, 'fee burn plus slash burn; permanently removed'],
-    ['Unissued', `${fmt(supply.unissuedCoins, 6)} FSTOP`, 'head-room left under the cap'],
+    ['Hard cap', `${fmt(supply.maxSupplyCoins, 0)} LDX`, 'a protocol constant, asserted on every mint'],
+    ['Issued', `${fmt(supply.totalIssuedCoins, 6)} LDX`, 'sum of protocol mints since genesis'],
+    ['Burned', `${fmt(supply.burnedCoins, 8)} LDX`, 'fee burn plus slash burn; permanently removed'],
+    ['Unissued', `${fmt(supply.unissuedCoins, 6)} LDX`, 'head-room left under the cap'],
     ['Issued as % of cap', `${fmt((supply.totalIssuedCoins / supply.maxSupplyCoins) * 100, 3)}%`, 'the cap is a ceiling, not a schedule'],
-    ['Conservation', audit.ok ? `holds: ${fmt(Number(BigInt(audit.onchainTotal)) / 1e18, 6)} FSTOP on chain = ${fmt(Number(BigInt(audit.ledgerTotal)) / 1e18, 6)} FSTOP minted minus burned` : `VIOLATED: ${JSON.stringify(audit)}`, 'the node walks the whole state trie and asserts sum(balances) === minted - burned'],
+    ['Conservation', audit.ok ? `holds: ${fmt(Number(BigInt(audit.onchainTotal)) / 1e18, 6)} LDX on chain = ${fmt(Number(BigInt(audit.ledgerTotal)) / 1e18, 6)} LDX minted minus burned` : `VIOLATED: ${JSON.stringify(audit)}`, 'the node walks the whole state trie and asserts sum(balances) === minted - burned'],
     ['Staking escrow', escrowNote],
   ];
 
@@ -543,7 +543,7 @@ async function main() {
         if (balances.every((b) => b >= each)) break;
         await sleep(500);
       }
-      log(`funded ${keys.length} load accounts with ${CONFIG.fundEach} FSTOP each`);
+      log(`funded ${keys.length} load accounts with ${CONFIG.fundEach} LDX each`);
     } else {
       const provider = new ethers.JsonRpcProvider(url);
       for (const w of keys) {

@@ -23,7 +23,7 @@ class Faucet {
    * @param {object} opts
    * @param {Chain} opts.chain
    * @param {{privateKey:string}} opts.key
-   * @param {bigint} opts.amount FSTOP per claim (base units)
+   * @param {bigint} opts.amount LDX per claim (base units)
    * @param {number} opts.cooldownMs per address
    * @param {bigint} opts.budgetPerEpoch total per sliding window
    */

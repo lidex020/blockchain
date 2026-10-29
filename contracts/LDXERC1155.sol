@@ -2,13 +2,13 @@
 pragma solidity ^0.8.25;
 
 /**
- * @title FSTOPERC1155
- * @notice Reference ERC-1155 for Full Stop multi-token collections: one
+ * @title LDXERC1155
+ * @notice Reference ERC-1155 for Lidex multi-token collections: one
  * contract holding many token types, each fungible or single-edition
  * depending on how the creator mints it. Safe mint and transfer entrypoints
  * enforce the ERC-1155 receiver acceptance callbacks for contract recipients.
  */
-contract FSTOPERC1155 {
+contract LDXERC1155 {
     string public uriTemplate; // template containing {id}
     string public name;
     address public owner;

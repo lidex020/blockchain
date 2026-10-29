@@ -1,11 +1,11 @@
 'use strict';
 /**
- * FSTOP supply ledger.
+ * LDX supply ledger.
  *
  * This is the protocol-level accounting authority for the native coin. It is
  * deliberately separate from the EVM: the EVM may only move balances between
- * accounts, while every *issuance* and *burn* of FSTOP goes through this
- * module. That separation is what makes the 100,000,000 FSTOP hard cap a
+ * accounts, while every *issuance* and *burn* of LDX goes through this
+ * module. That separation is what makes the 100,000,000 LDX hard cap a
  * protocol rule rather than a promise made by a contract or a dashboard.
  *
  * Invariants (enforced here, asserted again by the chain after every block):

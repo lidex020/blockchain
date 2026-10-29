@@ -2,8 +2,8 @@
 pragma solidity ^0.8.25;
 
 /**
- * @title FSTOPERC721
- * @notice Reference ERC-721 used by the Full Stop NFT creator.
+ * @title LDXERC721
+ * @notice Reference ERC-721 used by the Lidex NFT creator.
  *
  * Metadata model: token JSON is stored on-chain (see `tokenURI`), which means
  * the artwork reference is a normal `image` field pointing at external storage
@@ -11,7 +11,7 @@ pragma solidity ^0.8.25;
  * storage disappears the image reference breaks while the token itself stays
  * on-chain.
  */
-contract FSTOPERC721 {
+contract LDXERC721 {
     string public name;
     string public symbol;
 

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.25;
 
 /**
- * @title FSTOPERC20
- * @notice Reference ERC-20 implementation deployed by the Full Stop asset
+ * @title LDXERC20
+ * @notice Reference ERC-20 implementation deployed by the Lidex asset
  * creator. Deliberately minimal and readable: every privileged behaviour is
  * either switched on at creation time and permanent, or controlled by the
  * owner and disclosed by `permissions()`.
@@ -15,7 +15,7 @@ pragma solidity ^0.8.25;
  *    allowed; that makes the token non-cancellable only in one direction and
  *    is a serious centralisation risk.
  */
-contract FSTOPERC20 {
+contract LDXERC20 {
     string public name;
     string public symbol;
     uint8 public immutable decimals;

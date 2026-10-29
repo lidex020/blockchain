@@ -11,7 +11,7 @@
 
 const CHAIN = {
   name: 'fullstop',
-  displayName: 'Full Stop Blockchain',
+  displayName: 'Lidex Blockchain',
   /** EIP-155 chain id (decimal). Mainnet candidate. */
   chainId: 72122n,
   /** Human readable network identifiers used by wallets. */
@@ -22,13 +22,13 @@ const CHAIN = {
 };
 
 const COIN = {
-  name: 'Full Stop Coin',
-  ticker: 'FSTOP',
+  name: 'Lidex Coin',
+  ticker: 'LDX',
   /** 18 decimals - matches the EVM native-currency convention. */
   decimals: 18,
   /** Smallest unit name (wei analogue). */
   smallestUnit: 'stops',
-  /** One FSTOP expressed in `stops`. */
+  /** One LDX expressed in `stops`. */
   unit: 10n ** 18n,
   /**
    * PROPOSED hard maximum supply. Enforced by the protocol ledger
@@ -79,7 +79,7 @@ const FEES = {
 };
 
 const REWARDS = {
-  /** Fixed block subsidy, denominated in whole FSTOP units (0.1 FSTOP). */
+  /** Fixed block subsidy, denominated in whole LDX units (0.1 LDX). */
   blockSubsidy: 10n ** 17n,
   /**
    * Validator security & rewards pool: 25% of max supply, minted block by
@@ -102,7 +102,7 @@ const REWARDS = {
 };
 
 const STAKING = {
-  /** Minimum self-bond required to activate a validator (FSTOP units). */
+  /** Minimum self-bond required to activate a validator (LDX units). */
   minSelfStake: 100n * COIN.unit,
   /** Minimum delegation amount. */
   minDelegation: 1n * COIN.unit,
@@ -114,7 +114,7 @@ const STAKING = {
   defaultCommissionBps: 1000n,
   /** Cap on the number of active validators in the set. */
   maxActiveValidators: 64,
-  /** Power units per staked FSTOP. */
+  /** Power units per staked LDX. */
   powerPerCoin: 1n,
 };
 
@@ -138,7 +138,7 @@ const ALLOCATIONS = {
 const COMMUNITY = {
   /** Blocks per reward round (~1 day at 1.5s blocks). */
   roundBlocks: 57_600,
-  /** Maximum FSTOP a single round may pay out. */
+  /** Maximum LDX a single round may pay out. */
   roundBudget: 100n * COIN.unit,
   /** Maximum a single contributor address may claim per round. */
   maxPerAddressPerRound: 25n * COIN.unit,

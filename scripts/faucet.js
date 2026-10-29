@@ -46,7 +46,7 @@ async function main() {
     const status = await rpc(url, 'fs_faucetStatus').catch(async () => null);
     if (!status) {
       const supply = await rpc(url, 'fs_supply');
-      process.stdout.write(`this node does not expose a faucet status method; community pool holds ${BigInt(supply.pools?.community?.issued ?? 0) / 10n ** 18n} FSTOP issued to it\n`);
+      process.stdout.write(`this node does not expose a faucet status method; community pool holds ${BigInt(supply.pools?.community?.issued ?? 0) / 10n ** 18n} LDX issued to it\n`);
       return;
     }
     process.stdout.write(`${JSON.stringify(status, null, 2)}\n`);
@@ -58,7 +58,7 @@ async function main() {
   const claim = await rpc(url, 'fs_faucet', [String(to)]);
   const amount = claim.amount ?? '0';
   process.stdout.write(
-    `queued ${Number(BigInt(amount)) / 1e18} ${claim.ticker ?? 'FSTOP'} for ${to}\n  transaction ${claim.hash}\n`
+    `queued ${Number(BigInt(amount)) / 1e18} ${claim.ticker ?? 'LDX'} for ${to}\n  transaction ${claim.hash}\n`
   );
   // Verification is the default: a faucet client that prints "queued" and exits
   // green while the transaction never lands is how an operator ends up with a
@@ -68,7 +68,7 @@ async function main() {
       const receipt = await rpc(url, 'eth_getTransactionReceipt', [claim.hash]);
       if (receipt) {
         const balance = await rpc(url, 'eth_getBalance', [to, 'latest']);
-        process.stdout.write(`  confirmed in block ${Number(BigInt(receipt.blockNumber))}; balance now ${Number(BigInt(balance)) / 1e18} FSTOP\n`);
+        process.stdout.write(`  confirmed in block ${Number(BigInt(receipt.blockNumber))}; balance now ${Number(BigInt(balance)) / 1e18} LDX\n`);
         return;
       }
       await new Promise((r) => setTimeout(r, 200));

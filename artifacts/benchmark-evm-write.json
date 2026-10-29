@@ -167,7 +167,7 @@
     "validators": 4,
     "nativeCoin": {
       "name": "Full Stop Coin",
-      "ticker": "FSTOP",
+      "ticker": "LDX",
       "decimals": 18
     },
     "hardfork": "shanghai",

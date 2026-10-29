@@ -11,17 +11,17 @@ export function initializeAppKit(network) {
     id: chainId,
     caipNetworkId: `eip155:${chainId}`,
     chainNamespace: 'eip155',
-    name: network.chainName || 'Full Stop Blockchain',
+    name: 'Lidex',
     nativeCurrency: {
-      name: network.currency?.name || 'Full Stop Coin',
-      symbol: network.currency?.symbol || 'FSTOP',
+      name: 'Lidex Coin',
+      symbol: network.currency?.symbol || 'LDX',
       decimals: network.currency?.decimals ?? 18,
     },
     rpcUrls: {
       default: { http: [network.rpcUrl] },
     },
     blockExplorers: {
-      default: { name: 'Full Stop Explorer', url: explorerUrl },
+      default: { name: 'Lidex Explorer', url: explorerUrl },
     },
   });
   const modal = createAppKit({
@@ -30,10 +30,10 @@ export function initializeAppKit(network) {
     defaultNetwork: chain,
     projectId: PROJECT_ID,
     metadata: {
-      name: 'Full Stop Blockchain',
-      description: 'Full Stop Blockchain explorer and asset studio',
+      name: 'Lidex',
+      description: 'Lidex explorer and asset studio',
       url: location.origin,
-      icons: [`${location.origin}/favicon.ico`],
+      icons: [`${location.origin}/lidex-logo.png`],
     },
     features: {
       analytics: false,

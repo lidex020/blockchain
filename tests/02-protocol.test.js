@@ -62,7 +62,7 @@ async function mine(chain, proposer) {
 
 async function run(suite) {
   // ------------------------------------------------------------ supply rules
-  suite.describe('FSTOP supply rules');
+  suite.describe('LDX supply rules');
 
   await suite.test('genesis mints exactly the approved initial issuance, and conservation holds', async () => {
     const { chain } = await solo();
@@ -161,7 +161,7 @@ async function run(suite) {
   await suite.test('unauthorized minting is impossible: the EVM has no mint path', async () => {
     const { chain, genesis } = await solo();
     const attacker = account(GENESIS, 'user3');
-    const iface = new ethers.Interface(ARTIFACTS.FSTOPERC20.abi);
+    const iface = new ethers.Interface(ARTIFACTS.LDXERC20.abi);
     // a contract cannot move native coin into existence; try to "mint" by
     // calling the protocol module with value the sender does not have
     const raw = await attacker.signTransaction({
@@ -768,9 +768,9 @@ async function run(suite) {
   await suite.test('a Solidity contract deploys, stores, reads, logs and can be simulated', async () => {
     const { chain, genesis } = await solo();
     const wallet = account(GENESIS, 'user1');
-    const abi = ARTIFACTS.FSTOPERC20.abi;
+    const abi = ARTIFACTS.LDXERC20.abi;
     const iface = new ethers.Interface(abi);
-    const deployData = ARTIFACTS.FSTOPERC20.bytecode + iface.encodeDeploy(['Test Token', 'TT', 18, toBase('1000'), 0, true, true, false, wallet.address, '0x' + '00'.repeat(20)]).slice(2);
+    const deployData = ARTIFACTS.LDXERC20.bytecode + iface.encodeDeploy(['Test Token', 'TT', 18, toBase('1000'), 0, true, true, false, wallet.address, '0x' + '00'.repeat(20)]).slice(2);
     await chain.pool.add(
       await wallet.signTransaction({ to: null, data: deployData, gasLimit: 5_000_000n, gasPrice: BigInt(FEES.minGasPrice), nonce: 0, chainId: Number(genesis.chain_id) }),
       { gossip: false }
@@ -820,8 +820,8 @@ async function run(suite) {
   await suite.test('a mint past the token cap reverts, and the revert reason surfaces', async () => {
     const { chain, genesis } = await solo();
     const wallet = account(GENESIS, 'user0');
-    const iface = new ethers.Interface(ARTIFACTS.FSTOPERC20.abi);
-    const data = ARTIFACTS.FSTOPERC20.bytecode + iface.encodeDeploy(['Capped', 'CAP', 18, toBase('5'), toBase('10'), true, false, false, wallet.address, '0x' + '00'.repeat(20)]).slice(2);
+    const iface = new ethers.Interface(ARTIFACTS.LDXERC20.abi);
+    const data = ARTIFACTS.LDXERC20.bytecode + iface.encodeDeploy(['Capped', 'CAP', 18, toBase('5'), toBase('10'), true, false, false, wallet.address, '0x' + '00'.repeat(20)]).slice(2);
     await chain.pool.add(await wallet.signTransaction({ to: null, data, gasLimit: 5_000_000n, gasPrice: BigInt(FEES.minGasPrice), nonce: 0, chainId: Number(genesis.chain_id) }), { gossip: false });
     await mine(chain, wallet.address);
     const token = chain.receiptsByHeight.get(1)[0].contractAddress;
@@ -841,8 +841,8 @@ async function run(suite) {
     const { chain, genesis } = await solo();
     const owner = account(GENESIS, 'user1');
     const stranger = account(GENESIS, 'user2');
-    const iface = new ethers.Interface(ARTIFACTS.FSTOPERC20.abi);
-    const data = ARTIFACTS.FSTOPERC20.bytecode + iface.encodeDeploy(['NoMint', 'NM', 18, toBase('5'), 0, false, false, false, owner.address, '0x' + '00'.repeat(20)]).slice(2);
+    const iface = new ethers.Interface(ARTIFACTS.LDXERC20.abi);
+    const data = ARTIFACTS.LDXERC20.bytecode + iface.encodeDeploy(['NoMint', 'NM', 18, toBase('5'), 0, false, false, false, owner.address, '0x' + '00'.repeat(20)]).slice(2);
     await chain.pool.add(await owner.signTransaction({ to: null, data, gasLimit: 5_000_000n, gasPrice: BigInt(FEES.minGasPrice), nonce: 0, chainId: Number(genesis.chain_id) }), { gossip: false });
     await mine(chain, owner.address);
     const token = chain.receiptsByHeight.get(1)[0].contractAddress;
@@ -868,7 +868,7 @@ async function run(suite) {
     const registry = genesis.system_contracts.asset_registry;
     const factoryIface = new ethers.Interface(ARTIFACTS.FullStopERC20Factory.abi);
     const registryIface = new ethers.Interface(ARTIFACTS.FullStopAssetRegistry.abi);
-    const tokenIface = new ethers.Interface(ARTIFACTS.FSTOPERC20.abi);
+    const tokenIface = new ethers.Interface(ARTIFACTS.LDXERC20.abi);
     const params = {
       name: 'Community Coin',
       symbol: 'CMC',
@@ -917,8 +917,8 @@ async function run(suite) {
     const creator = account(GENESIS, 'user1');
     const nftIface = new ethers.Interface(ARTIFACTS.FullStopERC721Factory.abi);
     const multiIface = new ethers.Interface(ARTIFACTS.FullStopERC1155Factory.abi);
-    const erc721 = new ethers.Interface(ARTIFACTS.FSTOPERC721.abi);
-    const erc1155 = new ethers.Interface(ARTIFACTS.FSTOPERC1155.abi);
+    const erc721 = new ethers.Interface(ARTIFACTS.LDXERC721.abi);
+    const erc1155 = new ethers.Interface(ARTIFACTS.LDXERC1155.abi);
     let nonce = 0;
     const send = async (to, data, gasLimit = 6_000_000n) =>
       chain.pool.add(
@@ -960,7 +960,7 @@ async function run(suite) {
     await mine(chain, creator.address);
     const moved = await chain.execution.call({ to: nftAddr, data: erc721.encodeFunctionData('ownerOf', [1n]) });
     assertEqual(ethers.AbiCoder.defaultAbiCoder().decode(['address'], moved.returnValue)[0].toLowerCase(), account(GENESIS, 'user3').address.toLowerCase(), 'NFT transfer did not move ownership');
-    const directDeploy = ARTIFACTS.FSTOPERC1155.bytecode + erc1155.encodeDeploy(['Authorized passes', 'ipfs://meta/{id}.json', creator.address]).slice(2);
+    const directDeploy = ARTIFACTS.LDXERC1155.bytecode + erc1155.encodeDeploy(['Authorized passes', 'ipfs://meta/{id}.json', creator.address]).slice(2);
     await send(null, directDeploy);
     await mine(chain, creator.address);
     const directAddr = chain.receiptsByHeight.get(4)[0].contractAddress;
@@ -1022,7 +1022,7 @@ async function run(suite) {
     const receiverArtifact = compiled.contracts['Receiver.sol'].Receiver;
     const receiverIface = new ethers.Interface(receiverArtifact.abi);
     const receiverBytecode = `0x${receiverArtifact.evm.bytecode.object}`;
-    const tokenIface = new ethers.Interface(ARTIFACTS.FSTOPERC1155.abi);
+    const tokenIface = new ethers.Interface(ARTIFACTS.LDXERC1155.abi);
     let nonce = 0;
     const submit = async (to, data, gasLimit = 1_000_000n) => {
       await chain.pool.add(
@@ -1043,7 +1043,7 @@ async function run(suite) {
     const deployed = await submit(null, receiverBytecode, 2_000_000n);
     assertEqual(deployed.status, 1, 'receiver harness deployment');
     const receiver = deployed.contractAddress;
-    const collectionBytecode = `${ARTIFACTS.FSTOPERC1155.bytecode}${tokenIface.encodeDeploy(['Receiver test', '', creator.address]).slice(2)}`;
+    const collectionBytecode = `${ARTIFACTS.LDXERC1155.bytecode}${tokenIface.encodeDeploy(['Receiver test', '', creator.address]).slice(2)}`;
     const collectionReceipt = await submit(null, collectionBytecode, 4_000_000n);
     assertEqual(collectionReceipt.status, 1, 'ERC-1155 collection deployment');
     const collection = collectionReceipt.contractAddress;

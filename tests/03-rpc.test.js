@@ -218,8 +218,8 @@ async function run(suite) {
     });
 
     await suite.test('a contract deploys through RPC, is readable, logs an event, and filters by address', async () => {
-      const iface = new ethers.Interface(ART.FSTOPERC20.abi);
-      const deployData = ART.FSTOPERC20.bytecode + iface.encodeDeploy(['RPC Token', 'RPC', 18, toBase('1000'), 0, true, true, false, alice.address, '0x' + '00'.repeat(20)]).slice(2);
+      const iface = new ethers.Interface(ART.LDXERC20.abi);
+      const deployData = ART.LDXERC20.bytecode + iface.encodeDeploy(['RPC Token', 'RPC', 18, toBase('1000'), 0, true, true, false, alice.address, '0x' + '00'.repeat(20)]).slice(2);
       const raw = await alice.signTransaction({ to: null, data: deployData, gasLimit: 6_000_000n, gasPrice: BigInt(FEES.minGasPrice), nonce: await nonceOf(alice.address), chainId });
       const hash = await call(url, 'eth_sendRawTransaction', [raw]);
       const rc = await waitForReceipt(url, hash);
@@ -329,13 +329,18 @@ async function run(suite) {
       const res = await fetch(url.replace(/\/$/, '') + '/');
       assertEqual(res.status, 200, 'explorer not served');
       const html = await res.text();
-      assert(html.includes('FULL STOP'), 'unexpected page');
+      assert(html.includes('LIDEX'), 'unexpected page');
       assert(!/<link[^>]+href=["'](?!data:)[^"']*\.css/.test(html), 'the app must not depend on external stylesheets');
+      const logo = await fetch(url.replace(/\/$/, '') + '/lidex-logo.png');
+      assertEqual(logo.status, 200, 'Lidex logo not served');
+      assert(logo.headers.get('content-type')?.startsWith('image/png'), 'Lidex logo must be served as PNG');
       const descriptor = await (await fetch(url.replace(/\/$/, '') + '/network.json')).json();
       assertEqual(descriptor.chainId, String(chainId), 'network.json chain id');
       assertEqual(descriptor.rpcUrl.replace(/\/$/, ''), url.replace(/\/$/, ''), 'network.json rpc url');
+      assertEqual(descriptor.chainName, 'Lidex Blockchain', 'network name');
       assert(descriptor.contracts.erc20_factory, 'network.json advertises the asset factories');
-      assertEqual(descriptor.currency.symbol, 'FSTOP', 'currency symbol');
+      assertEqual(descriptor.currency.symbol, 'LDX', 'currency symbol');
+      assertEqual(descriptor.currency.name, 'Lidex Coin', 'currency name');
       assertEqual(descriptor.currency.decimals, 18, 'currency decimals');
       assert(descriptor.currency.name, 'currency name');
     });
@@ -366,7 +371,7 @@ async function run(suite) {
         blockExplorerUrls: [descriptor.explorerUrl],
       };
       assertEqual(cfg.chainId, '0x' + BigInt(chainId).toString(16), 'chain id hex');
-      assertEqual(cfg.nativeCurrency.symbol, 'FSTOP', 'nativeCurrency.symbol is the field a wallet reads');
+      assertEqual(cfg.nativeCurrency.symbol, 'LDX', 'nativeCurrency.symbol is the field a wallet reads');
       assert(cfg.rpcUrls[0].startsWith('http'), 'rpc url');
       assert(cfg.blockExplorerUrls[0].startsWith('http'), 'explorer url');
     });
@@ -413,7 +418,7 @@ async function run(suite) {
     await suite.test('fs_params reports the live genesis parameters, not compiled-in defaults', async () => {
       const params = await call(url, 'fs_params');
       assertEqual(params.chainId, String(chainId), 'chain id');
-      assertEqual(params.ticker, 'FSTOP', 'ticker');
+      assertEqual(params.ticker, 'LDX', 'ticker');
       assertEqual(params.decimals, 18, 'decimals');
       assertEqual(BigInt(params.maxSupply), toBase('100000000'), 'the hard cap the node enforces');
       assert(BigInt(params.blockGasLimit) > 0n, 'block gas limit');

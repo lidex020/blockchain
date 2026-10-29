@@ -155,7 +155,7 @@ const commands = {
         '  evidence             accepted slashable evidence',
         '  claims               community participation claims',
         '',
-        '  send --to .. --value .. --key ..            transfer native FSTOP',
+        '  send --to .. --value .. --key ..            transfer native LDX',
         '  stake register --moniker .. --commission .. --key ..   become a validator',
         '  stake bond --operator .. --value .. --key ..           delegate',
         '  stake unbond --operator .. --value .. --key ..         start unbonding',
@@ -360,7 +360,7 @@ const commands = {
   async send(args) {
     const url = args.rpc ?? 'http://127.0.0.1:7300';
     const wallet = loadWallet(args, url);
-    if (!args.to || args.value === undefined) fail('usage: fullstop send --to <address> --value <FSTOP> --key <file>');
+    if (!args.to || args.value === undefined) fail('usage: fullstop send --to <address> --value <LDX> --key <file>');
     const gas = args.gas ? BigInt(String(args.gas)) : 21_000n;
     const r = await send(wallet, url, { to: ethers.getAddress(String(args.to)), value: ethers.parseUnits(String(args.value), COIN.decimals), gasLimit: gas, data: args.data ? String(args.data) : '0x' });
     if (!r.ok) process.exitCode = 1;
@@ -436,7 +436,7 @@ const commands = {
       if (!r.ok) process.exitCode = 1;
       return;
     }
-    fail('usage: fullstop claim submit --amount <FSTOP> [--ref <text>] | claim review --id <bytes32> --approve true|false');
+    fail('usage: fullstop claim submit --amount <LDX> [--ref <text>] | claim review --id <bytes32> --approve true|false');
   },
 
   async asset(args) {

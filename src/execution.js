@@ -18,7 +18,7 @@
  *      receipt root and the application hash all go into the block header;
  *   5. commit the checkpoint (block accepted) or revert it (verification run).
  *
- * The EVM itself can never create or destroy FSTOP: it only moves balances.
+ * The EVM itself can never create or destroy LDX: it only moves balances.
  * All issuance is protocol code inside the ledger, which enforces the cap.
  */
 

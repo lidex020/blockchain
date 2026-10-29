@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Full Stop Blockchain — Everything ends here.</title>
-<meta name="description" content="One independent, EVM-compatible blockchain with a live explorer, FSTOP network data, and tools to create tokens and NFTs." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23fff'/%3E%3C/svg%3E" />
+<title>Lidex — Everything ends here.</title>
+<meta name="description" content="Lidex is an independent, EVM-compatible blockchain with a live explorer, LDX network data, and tools to create tokens and NFTs." />
+<link rel="icon" type="image/png" href="lidex-logo.png" />
 <style>
   /* Self-contained on purpose: the app must render even when it is opened
      straight from disk or inside a sandboxed preview with no network access. */
@@ -17,8 +17,8 @@
     --text: #f4f6fb;
     --muted: #98a1b8;
     --dim: #6d768c;
-    --accent: #7c8cff;
-    --accent-2: #b9c4ff;
+    --accent: #20a85b;
+    --accent-2: #81e3a8;
     --good: #48d597;
     --bad: #ff6b81;
     --warn: #ffcc66;
@@ -28,8 +28,8 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: radial-gradient(1200px 620px at 72% -8%, rgba(96, 118, 255, .28), transparent 60%),
-                radial-gradient(700px 420px at 8% 6%, rgba(124, 140, 255, .12), transparent 60%), var(--bg);
+    background: radial-gradient(1200px 620px at 72% -8%, rgba(32, 168, 91, .2), transparent 60%),
+                radial-gradient(700px 420px at 8% 6%, rgba(32, 168, 91, .1), transparent 60%), var(--bg);
     color: var(--text);
     font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
     min-height: 100vh;
@@ -45,16 +45,17 @@
     backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--line);
   }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .orb {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #fff, #dfe4ff 60%, #aeb8e8);
-    box-shadow: 0 0 22px rgba(180, 195, 255, .55);
+  #explorerHeader {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px clamp(8px, 1.5vw, 20px);
   }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-logo { display: block; width: 42px; height: 42px; object-fit: contain; }
   .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
   .brand-text strong { font-size: 15px; letter-spacing: .12em; }
   .brand-text small { color: var(--dim); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-  nav.tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+  nav.tabs { display: flex; gap: 4px; min-width: 0; }
   nav.tabs a {
     padding: 8px 14px; border-radius: 999px; color: var(--muted); font-size: 13.5px; font-weight: 500;
     border: 1px solid transparent;
@@ -68,7 +69,7 @@
   }
   .net-pill.live { color: var(--good); border-color: rgba(72, 213, 151, .35); }
   .net-pill.down { color: var(--bad); border-color: rgba(255, 107, 129, .35); }
-  main { position: relative; z-index: 1; padding: 30px 26px 60px; max-width: 1180px; margin: 0 auto; }
+  main { position: relative; z-index: 1; width: 100%; padding: 30px clamp(16px, 2.5vw, 40px) 60px; margin: 0 auto; }
   h1 { font-size: clamp(30px, 5vw, 52px); line-height: 1.03; letter-spacing: -.03em; margin: 0 0 14px; }
   h2 { font-size: 22px; letter-spacing: -.01em; margin: 0 0 4px; }
   h3 { font-size: 15px; margin: 0 0 10px; letter-spacing: .01em; }
@@ -103,7 +104,7 @@
     background: #fff; color: #0a0c12; border: 1px solid transparent; border-radius: 999px;
     padding: 10px 17px; font-weight: 600; font-size: 13.5px; transition: .16s ease;
   }
-  .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(180, 195, 255, .16); }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(32, 168, 91, .2); }
   .btn.ghost { background: transparent; color: var(--text); border-color: var(--line); }
   .btn.ghost:hover { background: var(--panel-strong); box-shadow: none; }
   .btn[disabled] { opacity: .5; pointer-events: none; }
@@ -111,7 +112,7 @@
     width: 100%; background: rgba(0, 0, 0, .35); color: var(--text); border: 1px solid var(--line);
     border-radius: 11px; padding: 11px 13px; font-size: 14px; font-family: inherit;
   }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(124, 140, 255, .6); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(32, 168, 91, .7); }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: .04em; text-transform: uppercase; }
   .field { display: flex; flex-direction: column; }
   .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; border: 1px solid var(--line); }
@@ -121,7 +122,7 @@
   .pill.dim { color: var(--muted); }
   .bar { height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .07); overflow: hidden; }
   .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #cdd6ff); }
-  .notice { border-left: 2px solid var(--accent); background: rgba(124, 140, 255, .07); padding: 11px 14px; border-radius: 0 10px 10px 0; font-size: 13px; color: #cfd6f5; }
+  .notice { border-left: 2px solid var(--accent); background: rgba(32, 168, 91, .08); padding: 11px 14px; border-radius: 0 10px 10px 0; font-size: 13px; color: #d3eadb; }
   .notice.warn { border-color: var(--warn); background: rgba(255, 204, 102, .07); color: #f0e0bb; }
   .notice.bad { border-color: var(--bad); background: rgba(255, 107, 129, .08); color: #ffd3d9; }
   .seg { display: inline-flex; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 3px; }
@@ -138,15 +139,15 @@
   .toast { background: #0d1018; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 13px; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
   .toast.good { border-color: rgba(72, 213, 151, .4); }
   .toast.bad { border-color: rgba(255, 107, 129, .45); }
-  .hero { padding: 26px 28px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(124, 140, 255, .1), rgba(255, 255, 255, .02)); margin-bottom: 22px; }
+  .hero { padding: 26px 28px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(32, 168, 91, .1), rgba(255, 255, 255, .02)); margin-bottom: 22px; }
   .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 30px; align-items: center; }
   @media (max-width: 980px) { .hero-grid { grid-template-columns: 1fr; } }
-  .orb-art { width: 190px; height: 190px; margin-left: auto; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fff, #e9ecff 55%, #b9c3f0); box-shadow: 0 0 70px rgba(160, 178, 255, .55); }
+  .orb-art { width: 190px; height: 190px; margin-left: auto; background: url("lidex-logo.png") center / contain no-repeat; filter: drop-shadow(0 0 30px rgba(32, 168, 91, .35)); }
   @media (max-width: 980px) { .orb-art { margin: 0; width: 130px; height: 130px; } }
   .hidden { display: none !important; }
   .num { font-variant-numeric: tabular-nums; }
   [hidden] { display: none !important; }
-  .landing-header { min-height: 78px; justify-content: space-between; padding: 14px clamp(22px, 7vw, 118px); }
+  header.site-header.landing-header { min-height: 78px; justify-content: space-between; padding: 14px clamp(18px, 5vw, 80px); }
   .landing-header .brand { flex-shrink: 0; }
   .landing-nav { display: flex; align-items: center; justify-content: center; gap: clamp(20px, 4vw, 54px); margin: 0 auto; }
   .landing-nav a { color: var(--text); font-size: 14px; font-weight: 550; }
@@ -154,7 +155,7 @@
   .landing-launch { flex-shrink: 0; padding: 10px 18px; }
   .landing-main { max-width: none; padding: 0; }
   .landing-hero { min-height: 428px; position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
-  .landing-wrap { width: min(1240px, calc(100% - 48px)); margin: 0 auto; }
+  .landing-wrap { width: calc(100% - clamp(32px, 6vw, 128px)); margin: 0 auto; }
   .landing-hero-inner { min-height: 428px; display: flex; align-items: center; position: relative; z-index: 1; padding: 48px 0 52px; }
   .landing-copy { width: min(520px, 52%); }
   .landing-eyebrow { color: var(--accent-2); text-transform: uppercase; letter-spacing: .24em; font-size: 11px; font-weight: 650; margin-bottom: 16px; }
@@ -165,14 +166,14 @@
   .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 12px rgba(72, 213, 151, .7); }
   .landing-live.down .live-dot { background: var(--bad); box-shadow: 0 0 12px rgba(255, 107, 129, .7); }
   .landing-art { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-  .landing-sphere { position: absolute; top: 112px; right: 29%; width: 164px; height: 164px; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fff, #f5f6ff 70%, #dce2ff); box-shadow: 0 0 38px rgba(178, 193, 255, .75), 0 0 110px rgba(77, 105, 255, .48); }
-  .landing-orbit { position: absolute; width: 1600px; height: 620px; left: 50%; bottom: -486px; transform: translateX(-50%) rotate(-4deg); border: 2px solid transparent; border-top-color: rgba(160, 175, 255, .95); border-radius: 50%; box-shadow: 0 -10px 32px rgba(81, 107, 255, .55); }
+  .landing-sphere { position: absolute; top: 112px; right: 29%; width: 164px; height: 164px; background: url("lidex-logo.png") center / contain no-repeat; filter: drop-shadow(0 0 30px rgba(32, 168, 91, .5)); }
+  .landing-orbit { position: absolute; width: 1600px; height: 620px; left: 50%; bottom: -486px; transform: translateX(-50%) rotate(-4deg); border: 2px solid transparent; border-top-color: rgba(129, 227, 168, .8); border-radius: 50%; box-shadow: 0 -10px 32px rgba(32, 168, 91, .4); }
   .landing-features { border-bottom: 1px solid var(--line); }
   .landing-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); padding: 38px 0; }
   .landing-feature { min-height: 72px; display: flex; align-items: flex-start; gap: 20px; padding: 0 34px; border-right: 1px solid var(--line); }
   .landing-feature:first-child { padding-left: 0; }
   .landing-feature:last-child { padding-right: 0; border-right: 0; }
-  .landing-icon { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-2); background: radial-gradient(circle, rgba(124, 140, 255, .22), rgba(124, 140, 255, .08)); font-size: 25px; }
+  .landing-icon { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-2); background: radial-gradient(circle, rgba(32, 168, 91, .22), rgba(32, 168, 91, .08)); font-size: 25px; }
   .landing-feature h3 { font-size: 16px; margin: 3px 0 6px; }
   .landing-feature p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; max-width: 250px; }
   .landing-ecosystem { padding: 34px 0 52px; }
@@ -188,16 +189,129 @@
   .landing-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
   .landing-footer p { margin: 0; }
   .landing-footer a { color: var(--accent-2); }
+  .social-links { display: flex; align-items: center; gap: 18px; }
+  .social-links a { font-weight: 600; }
+  @media (min-width: 1440px) {
+    body { font-size: clamp(16px, .7vw, 18px); }
+    header.site-header { gap: clamp(22px, 1.5vw, 36px); }
+    .brand-logo { width: clamp(46px, 2.4vw, 60px); height: clamp(46px, 2.4vw, 60px); }
+    .brand-text strong { font-size: clamp(17px, .85vw, 21px); }
+    .brand-text small { font-size: clamp(12px, .6vw, 15px); }
+    nav.tabs a { font-size: clamp(15px, .75vw, 18px); padding: 10px 16px; }
+    .net-pill { font-size: clamp(13px, .65vw, 16px); padding: 9px 13px; }
+    main { padding-top: clamp(36px, 2.5vw, 56px); }
+    h1 { font-size: clamp(64px, 4vw, 100px); }
+    h2 { font-size: clamp(26px, 1.6vw, 36px); }
+    h3 { font-size: clamp(17px, 1.1vw, 22px); }
+    p.lede { font-size: clamp(20px, 1.2vw, 26px); }
+    .eyebrow { font-size: clamp(12px, .7vw, 15px); }
+    .stat-label { font-size: clamp(14px, .75vw, 18px); }
+    .stat-value { font-size: clamp(28px, 1.7vw, 38px); }
+    .stat-sub { font-size: clamp(14px, .8vw, 18px); }
+    .mono, .hash { font-size: clamp(13px, .75vw, 17px); }
+    .tiny { font-size: clamp(14px, .75vw, 18px); }
+    .pill { font-size: clamp(13px, .7vw, 16px); }
+    table { font-size: clamp(15px, .8vw, 18px); }
+    th { font-size: clamp(12px, .7vw, 15px); }
+    .btn { font-size: clamp(15px, .8vw, 18px); padding: 12px 20px; }
+    input, select, textarea { font-size: clamp(16px, .85vw, 19px); }
+    label { font-size: clamp(14px, .75vw, 17px); }
+    .notice { font-size: clamp(15px, .8vw, 18px); }
+    .kvs { font-size: clamp(15px, .8vw, 19px); }
+    .seg button { font-size: clamp(15px, .8vw, 18px); }
+    footer.site-footer { font-size: clamp(14px, .75vw, 17px); }
+    .landing-header .landing-nav { gap: clamp(28px, 3vw, 64px); }
+    .landing-nav a { font-size: clamp(16px, .85vw, 20px); }
+    .landing-launch { padding: 13px 22px; }
+    .landing-hero, .landing-hero-inner { min-height: clamp(500px, 33vw, 760px); }
+    .landing-title { font-size: clamp(76px, 4.8vw, 124px); }
+    .landing-eyebrow { font-size: clamp(13px, .8vw, 17px); }
+    .landing-lede { font-size: clamp(22px, 1.2vw, 28px); }
+    .landing-live { font-size: clamp(14px, .75vw, 17px); }
+    .landing-actions .btn { font-size: clamp(16px, .85vw, 20px); padding: 14px 22px; }
+    .landing-sphere { width: clamp(190px, 13vw, 340px); height: clamp(190px, 13vw, 340px); }
+    .landing-feature-grid { padding: clamp(50px, 4vw, 78px) 0; }
+    .landing-feature { min-height: 90px; gap: clamp(22px, 2vw, 40px); padding-inline: clamp(34px, 3vw, 64px); }
+    .landing-icon { width: clamp(58px, 3.4vw, 76px); height: clamp(58px, 3.4vw, 76px); flex-basis: clamp(58px, 3.4vw, 76px); font-size: clamp(27px, 1.5vw, 34px); }
+    .landing-feature h3, .landing-card h3 { font-size: clamp(20px, 1.1vw, 24px); }
+    .landing-feature p, .landing-card p { font-size: clamp(16px, .9vw, 20px); }
+    .landing-ecosystem { padding: clamp(50px, 3.5vw, 78px) 0 clamp(64px, 4vw, 88px); }
+    .landing-ecosystem-grid { gap: clamp(28px, 2vw, 44px); }
+    .landing-intro h2 { font-size: clamp(40px, 2.3vw, 54px); }
+    .landing-intro p { font-size: clamp(17px, .95vw, 21px); }
+    .landing-card { min-height: clamp(240px, 18vw, 320px); padding: clamp(24px, 1.8vw, 36px); }
+    .landing-card .landing-icon { width: clamp(54px, 3vw, 68px); height: clamp(54px, 3vw, 68px); flex-basis: clamp(54px, 3vw, 68px); }
+    .landing-card a { font-size: clamp(15px, .8vw, 18px); }
+    .landing-footer { font-size: clamp(15px, .8vw, 18px); }
+  }
+  @media (max-width: 1100px) {
+    #explorerHeader { grid-template-columns: minmax(0, 1fr) auto; }
+    #explorerHeader .brand { grid-column: 1; }
+    #explorerHeader .header-side { grid-column: 2; }
+    #explorerHeader nav.tabs {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-content: flex-start;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      scrollbar-width: thin;
+    }
+    #explorerHeader nav.tabs a { flex: 0 0 auto; white-space: nowrap; }
+    header.site-header.landing-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 16px;
+    }
+    .landing-header .landing-nav {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      width: 100%;
+      min-width: 0;
+      justify-self: stretch;
+      justify-content: center;
+      margin: 0;
+    }
+  }
   @media (max-width: 1000px) {
     .landing-ecosystem-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .landing-intro { grid-column: 1 / -1; padding: 0 0 4px; }
     .landing-sphere { right: 17%; }
   }
+  @media (min-width: 701px) and (max-width: 1000px) {
+    .landing-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 0; }
+    .landing-feature:nth-child(2) { border-right: 0; }
+    .landing-feature:last-child { grid-column: 1 / -1; justify-self: center; }
+  }
   @media (max-width: 700px) {
-    .landing-header { min-height: 70px; padding: 12px 18px; }
-    .landing-nav { display: none; }
+    header.site-header.landing-header { min-height: 0; padding: 10px 18px; gap: 8px 12px; }
+    .landing-nav { flex-wrap: wrap; gap: 4px 18px; }
+    .landing-nav a { padding: 5px 0; font-size: 13px; }
     .landing-launch { padding: 9px 13px; font-size: 12px; }
-    .landing-wrap { width: min(100% - 36px, 540px); }
+    #explorerHeader {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      padding: 10px 16px;
+    }
+    #explorerHeader .brand,
+    #explorerHeader .header-side,
+    #explorerHeader nav.tabs { grid-column: 1; }
+    #explorerHeader .brand { grid-row: 1; }
+    #explorerHeader .header-side {
+      grid-row: 2;
+      justify-content: space-between;
+    }
+    #explorerHeader nav.tabs {
+      grid-row: 3;
+      margin: 0 -16px -10px;
+      padding: 0 16px 10px;
+      border-top: 1px solid var(--line);
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+    #explorerHeader nav.tabs::-webkit-scrollbar { height: 3px; }
+    #explorerHeader nav.tabs::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 999px; }
+    #explorerHeader nav.tabs a { padding: 8px 12px; }
+    .landing-wrap { width: calc(100% - 36px); }
     .landing-hero, .landing-hero-inner { min-height: 450px; }
     .landing-hero-inner { align-items: flex-start; padding: 56px 0 38px; }
     .landing-copy { width: 100%; }
@@ -214,6 +328,21 @@
     .landing-card { min-height: 180px; }
     .landing-footer { align-items: flex-start; flex-direction: column; }
   }
+  @media (max-width: 540px) {
+    header.site-header.landing-header { padding-inline: 12px; }
+    .brand-logo { width: 36px; height: 36px; }
+    .landing-header .brand { gap: 8px; }
+    .landing-launch { padding: 8px 10px; font-size: 11.5px; }
+    .landing-header .landing-nav {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px 12px;
+      width: 100%;
+    }
+    .landing-nav a { text-align: center; }
+    #explorerHeader { padding-inline: 12px; }
+    #explorerHeader nav.tabs { margin-inline: -12px; padding-inline: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -221,8 +350,8 @@
 
 <header class="site-header landing-header" id="landingHeader">
   <a class="brand" href="/">
-    <span class="orb" aria-hidden="true"></span>
-    <span class="brand-text"><strong>FULL STOP</strong><small>Blockchain</small></span>
+    <img class="brand-logo" src="lidex-logo.png" alt="" />
+    <span class="brand-text"><strong>LIDEX</strong><small>Blockchain</small></span>
   </a>
   <nav class="landing-nav" aria-label="Main navigation">
     <a href="#network">Network</a>
@@ -235,8 +364,8 @@
 
 <header class="site-header" id="explorerHeader" hidden>
   <a class="brand" href="#/">
-    <span class="orb" aria-hidden="true"></span>
-    <span class="brand-text"><strong>FULL STOP</strong><small>Blockchain</small></span>
+    <img class="brand-logo" src="lidex-logo.png" alt="" />
+    <span class="brand-text"><strong>LIDEX</strong><small>Blockchain</small></span>
   </a>
   <nav class="tabs" id="tabs">
     <a href="#/" data-tab="network">Network</a>
@@ -262,7 +391,7 @@
         <p class="landing-lede">One independent blockchain.<br>Limitless possibilities.</p>
         <div class="landing-actions">
           <a class="btn" href="#/blocks">Explore the Network <span aria-hidden="true">→</span></a>
-          <a class="btn ghost" href="#developers">Build on Full Stop <span aria-hidden="true">→</span></a>
+          <a class="btn ghost" href="#developers">Build on Lidex <span aria-hidden="true">→</span></a>
         </div>
         <div class="landing-live" id="landingLive">
           <span class="live-dot" aria-hidden="true"></span>
@@ -296,7 +425,7 @@
       <div class="landing-intro">
         <div class="landing-eyebrow">The ecosystem</div>
         <h2>One network. Endless possibilities.</h2>
-        <p>Full Stop Blockchain gives you the tools to build, create and grow in a decentralized world.</p>
+        <p>Lidex gives you the tools to build, create and grow in a decentralized world.</p>
       </div>
       <article class="card landing-card">
         <div class="landing-icon" aria-hidden="true">◇</div>
@@ -324,13 +453,17 @@
 
 <footer class="site-footer landing-footer" id="community">
   <div class="landing-wrap landing-footer">
-    <p>Full Stop Blockchain · Independent. Open. Built to last.</p>
+    <p>Lidex · Independent. Open. Built to last.</p>
     <p><span id="landingFooterStatus">Node connection is checked live.</span> <a id="landingOpenExplorer" href="http://127.0.0.1:7305/" hidden>Open local explorer</a> <button class="btn ghost" id="retryNode" type="button" hidden>Retry connection</button></p>
+    <nav class="social-links" aria-label="Social media">
+      <a href="https://x.com/lidexOfficial" target="_blank" rel="noopener noreferrer">X</a>
+      <a href="https://t.me/lidexOfficial" target="_blank" rel="noopener noreferrer">Telegram</a>
+    </nav>
   </div>
 </footer>
 
 <footer class="site-footer" id="explorerFooter" hidden>
-  <p id="footerNote">Full Stop Blockchain is a proposed network. Everything on this screen is read from, or written through, the node serving this page. Nothing here is a financial offer, and FSTOP has no guaranteed value.</p>
+  <p id="footerNote">Lidex is a proposed network. Everything on this screen is read from, or written through, the node serving this page. Nothing here is a financial offer, and LDX has no guaranteed value.</p>
 </footer>
 
 <div class="toast-wrap" id="toasts" aria-live="polite"></div>
@@ -338,7 +471,7 @@
 <script>
 'use strict';
 /*
- * Full Stop explorer + supply dashboard + asset studio.
+ * Lidex explorer + supply dashboard + asset studio.
  *
  * One file, no build step, no external requests: it talks to the node with
  * JSON-RPC over the same origin (so it works behind a proxy or tunnel), and it
@@ -443,7 +576,7 @@ async function route() {
     await fn(view, arg);
   } catch (err) {
     view.innerHTML = `<div class="card pad-lg"><h2>Could not load this view</h2><p class="muted">${esc(err.message)}</p>
-      <p class="tiny muted">This app talks to the Full Stop node over JSON-RPC. If you opened the file directly (file://) or the node is not running, start it with <span class="mono">npm run devnet</span> and load the page it prints.</p>
+      <p class="tiny muted">This app talks to the Lidex node over JSON-RPC. If you opened the file directly (file://) or the node is not running, start it with <span class="mono">npm run devnet</span> and load the page it prints.</p>
       <button class="btn ghost" id="retryView" type="button">Retry this view</button></div>`;
     document.getElementById('retryView').onclick = () => App.net?.rpcUrl ? route() : boot();
   }
@@ -477,7 +610,7 @@ async function boot() {
     document.getElementById('landingChainId').textContent = App.net.chainId;
     document.getElementById('landingHeight').textContent = fmtNum(status.height);
     document.getElementById('landingFooterStatus').textContent =
-      `${fmtNum(status.validators)} validators · ${fmtFstop(supply.totalIssued, 0)} FSTOP issued`;
+      `${fmtNum(status.validators)} validators · ${fmtFstop(supply.totalIssued, 0)} LDX issued`;
     document.getElementById('netStatus').classList.add('live');
     document.getElementById('netStatus').textContent = `chain ${App.net.chainId} · live`;
     document.getElementById('connectBtn').onclick = connectWallet;
@@ -502,8 +635,8 @@ async function boot() {
         console.error('Reown AppKit initialization failed:', err);
       });
   } catch (err) {
-    console.error('Full Stop node connection failed:', err);
-    App.net = { chainId: '—', rpcUrl: '', contracts: {}, currency: { ticker: 'FSTOP' } };
+    console.error('Lidex node connection failed:', err);
+    App.net = { chainId: '—', rpcUrl: '', contracts: {}, currency: { ticker: 'LDX' } };
     document.getElementById('landingLive').classList.add('down');
     const openedFromFile = location.protocol === 'file:';
     document.getElementById('landingNodeState').textContent = openedFromFile
@@ -570,7 +703,7 @@ async function viewNetwork(view) {
     <div>
       <div class="eyebrow">The next generation of blockchain</div>
       <h1>Everything<br>ends here.</h1>
-      <p class="lede">An independent Layer 1 with its own validator network, its own state, and the FSTOP coin. This page is that node: live blocks, supply accounting, staking and the asset studio.</p>
+      <p class="lede">An independent Layer 1 with its own validator network, its own state, and the LDX coin. This page is that node: live blocks, supply accounting, staking and the asset studio.</p>
       <div class="row">
         <button class="btn" id="jumpBlocks">Latest blocks →</button>
         <button class="btn ghost" id="jumpCreate">Create a token</button>
@@ -583,7 +716,7 @@ async function viewNetwork(view) {
     ${card('Height', fmtNum(status.height), `${fmtNum(status.txCount)} transactions in total`)}
     ${card('Block time', `${(status.consensus?.metrics ? Math.round(1000 / 1.5) : 0) || '1.5'}s`, 'target interval, ~1–2s design band')}
     ${card('Validators', fmtNum(status.validators), `${fmtNum(power)} total voting power`)}
-    ${card('Fees', `${fmtFstop(BigInt(status.mempool?.minGasPrice ?? 0) * 21000n, 6)} FSTOP`, 'a simple transfer at the floor price')}
+    ${card('Fees', `${fmtFstop(BigInt(status.mempool?.minGasPrice ?? 0) * 21000n, 6)} LDX`, 'a simple transfer at the floor price')}
   </div>
 
   <div class="grid aside" style="margin-top:16px">
@@ -606,11 +739,11 @@ async function viewNetwork(view) {
       <div class="card">
         <h3>This node's stake</h3>
         <p class="stat-value num">${fmtNum(myPower)}</p>
-        <p class="tiny muted">Voting power of the key this node holds (1 FSTOP bonded = 1 power). A node without a validator key reports 0 and only verifies and serves.</p>
+        <p class="tiny muted">Voting power of the key this node holds (1 LDX bonded = 1 power). A node without a validator key reports 0 and only verifies and serves.</p>
       </div>
       <div class="card">
         <h3>Supply at a glance</h3>
-        <p class="tiny muted">${fmtFstop(supply.totalIssued, 0)} FSTOP issued of ${fmtFstop(supply.maxSupply, 0)} hard cap. ${fmtFstop(supply.burned, 4)} permanently burned.</p>
+        <p class="tiny muted">${fmtFstop(supply.totalIssued, 0)} LDX issued of ${fmtFstop(supply.maxSupply, 0)} hard cap. ${fmtFstop(supply.burned, 4)} permanently burned.</p>
         <a class="btn ghost" href="#/supply" style="margin-top:10px">Supply dashboard →</a>
       </div>
     </div>
@@ -667,7 +800,7 @@ async function viewBlock(view, height) {
         <dt>Data root</dt><dd class="hash">${esc(short(evm?.transactionsRoot ?? '—', 12))}</dd>
         <dt>Receipt root</dt><dd class="hash">${esc(short(evm?.receiptsRoot ?? '—', 12))}</dd>
       </dl>
-      <p class="tiny muted" style="margin-top:12px">The state root covers contract storage and FSTOP balances; the application hash additionally covers the supply ledger and the validator registry. A validator that computes either differently stops rather than serving wrong data.</p></div>
+      <p class="tiny muted" style="margin-top:12px">The state root covers contract storage and LDX balances; the application hash additionally covers the supply ledger and the validator registry. A validator that computes either differently stops rather than serving wrong data.</p></div>
     </div>
     <div class="card" style="margin-top:16px"><h3>Transactions</h3>${txTable(evm?.transactions ?? [], receipts)}</div>`;
   wireCopyables(view);
@@ -702,7 +835,7 @@ async function viewSupply(view) {
   const pools = Object.entries(supply.pools ?? {});
   view.innerHTML = `
   <div class="eyebrow">Supply dashboard</div>
-  <h1>FSTOP supply, from the chain itself</h1>
+  <h1>LDX supply, from the chain itself</h1>
   <p class="lede">Every number below is computed from protocol state: mint and burn events recorded by the supply ledger, cross-checked against a full walk of the state trie. ${audit.ok ? 'The conservation check passes.' : '<span class="pill bad">invariant violated</span>'}</p>
 
   <div class="grid cols-4">
@@ -713,7 +846,7 @@ async function viewSupply(view) {
   </div>
 
   <div class="card" style="margin-top:16px">
-    <div class="row between"><h3>Allocation and release</h3><span class="tiny muted">unissued: ${fmtFstop(supply.unissued, 0)} FSTOP</span></div>
+    <div class="row between"><h3>Allocation and release</h3><span class="tiny muted">unissued: ${fmtFstop(supply.unissued, 0)} LDX</span></div>
     <div class="stack">
       ${pools.map(([key, p]) => {
         const alloc = BigInt(p.allocation);
@@ -759,13 +892,13 @@ async function viewValidators(view) {
   const total = vals.reduce((a, v) => a + BigInt(v.totalStake), 0n);
   view.innerHTML = `
   <div class="eyebrow">Security</div><h1>Validators and delegation</h1>
-  <p class="lede">The set that signs blocks. Power is staked FSTOP; a commit needs more than two thirds of it. Rewards are distributed by stake weight at every boundary, minus the validator's commission.</p>
+  <p class="lede">The set that signs blocks. Power is staked LDX; a commit needs more than two thirds of it. Rewards are distributed by stake weight at every boundary, minus the validator's commission.</p>
   <div class="card"><table><thead><tr><th>Moniker</th><th>Operator</th><th>Status</th><th>Power</th><th>Commission</th><th>Delegators</th><th>Missed</th></tr></thead><tbody>
   ${vals.map((v) => `<tr>
     <td><strong>${esc(v.moniker)}</strong></td>
     <td><a class="hash" href="#/address/${v.operator}">${esc(short(v.operator, 8))}</a></td>
     <td>${pill(v.status)}</td>
-    <td class="num">${fmtNum(v.power)}<span class="tiny muted"> · ${fmtFstop(v.totalStake, 0)} FSTOP</span></td>
+    <td class="num">${fmtNum(v.power)}<span class="tiny muted"> · ${fmtFstop(v.totalStake, 0)} LDX</span></td>
     <td class="num">${(Number(v.commissionBps) / 100).toFixed(1)}%</td>
     <td class="num">${v.delegators.length}</td>
     <td class="num">${fmtNum(v.missedBlocks)}${v.jailReason ? ` <span class="pill warn">${esc(v.jailReason)}</span>` : ''}</td>
@@ -783,9 +916,9 @@ async function viewValidators(view) {
     <div class="card"><h3>Delegate from this wallet</h3>
       <div class="stack">
         <div class="field"><label for="dOp">Validator operator</label><select id="dOp">${vals.map((v) => `<option value="${v.operator}">${esc(v.moniker)} — ${fmtNum(v.power)} power</option>`).join('')}</select></div>
-        <div class="field"><label for="dAmt">Amount (FSTOP)</label><input id="dAmt" value="10" /></div>
+        <div class="field"><label for="dAmt">Amount (LDX)</label><input id="dAmt" value="10" /></div>
         <button class="btn" id="dBtn">Bond</button>
-        <p class="tiny muted">A delegation is a transfer of FSTOP to the protocol escrow with an instruction attached; the escrow's balance is checked against recorded entitlements in every block.</p>
+        <p class="tiny muted">A delegation is a transfer of LDX to the protocol escrow with an instruction attached; the escrow's balance is checked against recorded entitlements in every block.</p>
       </div>
     </div>
     <div class="card"><h3>Escrow coverage</h3>
@@ -878,14 +1011,14 @@ async function viewCreate(view) {
       </div>
       <div class="notice bad hidden" id="f_warn"></div>`,
     erc721: () => `<div class="grid cols-2">
-        <div class="field"><label>Collection name</label><input id="f_name" placeholder="Full Stop Punks" /></div>
+        <div class="field"><label>Collection name</label><input id="f_name" placeholder="Lidex Punks" /></div>
         <div class="field"><label>Symbol</label><input id="f_symbol" placeholder="FSP" maxlength="12" /></div>
         <div class="field"><label>Max supply (0 = open)</label><input id="f_max" type="number" value="10000" /></div>
         <div class="field"><label>Collection metadata URI</label><input id="f_uri" placeholder="ipfs://…" /></div>
       </div>
       <p class="tiny muted" style="margin-top:12px">Per-token metadata is stored on-chain as the string you set when minting, and it usually <em>references</em> external storage. If that gateway disappears, the token survives and the artwork reference breaks — pin what matters.</p>`,
     erc1155: () => `<div class="grid cols-2">
-        <div class="field"><label>Collection name</label><input id="f_name" placeholder="Full Stop Passes" /></div>
+        <div class="field"><label>Collection name</label><input id="f_name" placeholder="Lidex Passes" /></div>
         <div class="field"><label>URI template ({id} is substituted)</label><input id="f_uri" value="ipfs://__CID__/{id}.json" /></div>
       </div>
       <p class="tiny muted" style="margin-top:12px">One contract, many token types: use a supply of 1 for a single edition, or more for a fungible type inside the same collection.</p>`,
@@ -909,10 +1042,10 @@ async function viewCreate(view) {
     const val = (id) => document.getElementById(id)?.value ?? '';
     const check = (id) => !!document.getElementById(id)?.checked;
     const lines = kind === 'erc20'
-      ? [`contract = new FSTOPERC20("${val('f_name') || '…'}", "${val('f_symbol') || '…'}", ${val('f_decimals') || 18}, ${val('f_supply') || 0}, max=${val('f_max') || 0}, mintable=${check('f_mint')}, burnable=${check('f_burn')}, allowlist=${check('f_restrict')})`, `owner = you`, `registry.register(kind = ERC20)`]
+      ? [`contract = new LDXERC20("${val('f_name') || '…'}", "${val('f_symbol') || '…'}", ${val('f_decimals') || 18}, ${val('f_supply') || 0}, max=${val('f_max') || 0}, mintable=${check('f_mint')}, burnable=${check('f_burn')}, allowlist=${check('f_restrict')})`, `owner = you`, `registry.register(kind = ERC20)`]
       : kind === 'erc721'
-        ? [`contract = new FSTOPERC721("${val('f_name') || '…'}", "${val('f_symbol') || '…'}", max=${val('f_max') || 0}, uri="${val('f_uri') || '…'}")`, `minting: only you, forever, up to the cap`, `registry.register(kind = ERC721)`]
-        : [`contract = new FSTOPERC1155("${val('f_name') || '…'}", "${val('f_uri') || '…'}")`, `mint/batch mint: only you`, `registry.register(kind = ERC1155)`];
+        ? [`contract = new LDXERC721("${val('f_name') || '…'}", "${val('f_symbol') || '…'}", max=${val('f_max') || 0}, uri="${val('f_uri') || '…'}")`, `minting: only you, forever, up to the cap`, `registry.register(kind = ERC721)`]
+        : [`contract = new LDXERC1155("${val('f_name') || '…'}", "${val('f_uri') || '…'}")`, `mint/batch mint: only you`, `registry.register(kind = ERC1155)`];
     document.getElementById('preview').innerHTML = lines.map((l) => `&gt; ${esc(l)}`).join('<br>');
     const warn = document.getElementById('f_warn');
     if (warn) {
@@ -970,7 +1103,7 @@ async function viewAccount(view) {
   const addr0 = App.accounts?.[0];
   if (!addr0) {
     view.innerHTML = `<div class="eyebrow">Wallet</div><h1>Connect to act</h1>
-      <p class="lede">This tab reads your account and lets you move FSTOP, bond to a validator, or claim testnet coin from the faucet.</p>
+      <p class="lede">This tab reads your account and lets you move LDX, bond to a validator, or claim testnet coin from the faucet.</p>
       <div class="card"><button class="btn" onclick="document.getElementById('connectBtn').click()">Connect wallet</button>
       <p class="tiny muted" style="margin-top:12px">No browser wallet? The same operations are available from the CLI: <span class="mono">node src/cli.js transfer --to 0x… --amount 5</span></p></div>`;
     return;
@@ -981,7 +1114,7 @@ async function viewAccount(view) {
   ]);
   view.innerHTML = `<div class="eyebrow">Wallet</div><h1>Your account</h1>
     <div class="grid cols-4">
-      ${card('Balance', fmtFstop(bal, 4), 'FSTOP')}
+      ${card('Balance', fmtFstop(bal, 4), 'LDX')}
       ${card('Nonce', fmtNum(nonce), 'next transaction number')}
       ${card('Type', code === '0x' ? 'externally owned' : 'contract', 'only an EOA can sign')}
       ${card('Network', esc(String(App.net.chainId)), 'chain id this page is talking to')}
@@ -989,17 +1122,17 @@ async function viewAccount(view) {
     <div class="grid cols-2" style="margin-top:16px">
       <div class="card"><h3>Address</h3><p class="hash" data-copy="${addr0}">${esc(addr0)}</p>
         <div class="row" style="margin-top:10px"><button class="btn ghost" id="copyAddr">Copy</button><a class="btn ghost" href="#/address/${addr0}">View in explorer</a></div></div>
-      <div class="card"><h3>Send FSTOP</h3>
+      <div class="card"><h3>Send LDX</h3>
         <div class="stack">
           <div class="field"><label>To</label><input id="s_to" placeholder="0x…" /></div>
-          <div class="field"><label>Amount (FSTOP)</label><input id="s_amt" value="1" /></div>
+          <div class="field"><label>Amount (LDX)</label><input id="s_amt" value="1" /></div>
           <button class="btn" id="s_btn">Send</button>
         </div>
       </div>
     </div>
     <div class="card" style="margin-top:16px"><h3>Testnet faucet</h3>
       <p class="tiny muted">The faucet signs an ordinary transfer from its own funded account — it cannot mint. Claims are limited per address and per window.</p>
-      <div class="row" style="margin-top:10px"><button class="btn ghost" id="f_btn">Request ${fmtFstop(App.net.faucet?.amount ?? 25n * UNIT, 0)} FSTOP</button></div>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="f_btn">Request ${fmtFstop(App.net.faucet?.amount ?? 25n * UNIT, 0)} LDX</button></div>
     </div>`;
   document.getElementById('copyAddr').onclick = () => copy(addr0);
   document.getElementById('s_btn').onclick = async () => {
@@ -1016,7 +1149,7 @@ async function viewAccount(view) {
   document.getElementById('f_btn').onclick = async () => {
     try {
       const r = await rpc('fs_faucet', [App.accounts[0]]);
-      toast('Faucet queued ' + fmtFstop(r.amount, 0) + ' FSTOP · ' + short(r.hash, 6), 'good');
+      toast('Faucet queued ' + fmtFstop(r.amount, 0) + ' LDX · ' + short(r.hash, 6), 'good');
     } catch (err) { toast(esc(err.message), 'bad'); }
   };
   wireCopyables(view);
@@ -1026,7 +1159,7 @@ async function viewAddress(view, addr0) {
   const [acct, txs] = await Promise.all([rpc('fs_account', [addr0]), rpc('fs_blocks', [{ count: 12 }])]);
   view.innerHTML = `<div class="eyebrow">Account</div><h1 class="mono" style="font-size:20px;word-break:break-all">${esc(addr0)}</h1>
     <div class="grid cols-4" style="margin-top:14px">
-      ${card('Balance', fmtFstop(acct.balance, 4), acct.ticker ?? 'FSTOP')}
+      ${card('Balance', fmtFstop(acct.balance, 4), acct.ticker ?? 'LDX')}
       ${card('Nonce', fmtNum(acct.nonce), 'transactions sent')}
       ${card('Kind', acct.isContract ? 'contract' : 'externally owned', 'code ' + (acct.isContract ? 'present' : 'absent'))}
       ${card('Code hash', esc(short(acct.codeHash, 6)), 'keccak of the deployed bytecode')}
@@ -1044,7 +1177,7 @@ async function viewTx(view, hash) {
     <div class="card"><h3>Transaction</h3><dl class="kvs">
       <dt>From</dt><dd class="hash">${esc(short(tx.from, 10))}</dd>
       <dt>To</dt><dd class="hash">${tx.to ? esc(short(tx.to, 10)) : '<span class="pill dim">contract creation</span>'}</dd>
-      <dt>Value</dt><dd class="num">${fmtFstop(tx.value, 6)} FSTOP</dd>
+      <dt>Value</dt><dd class="num">${fmtFstop(tx.value, 6)} LDX</dd>
       <dt>Nonce</dt><dd class="num">${fmtNum(tx.nonce)}</dd>
       <dt>Gas limit</dt><dd class="num">${fmtNum(BigInt(tx.gas))}</dd>
       <dt>Gas price</dt><dd class="num">${fmtNum(BigInt(tx.gasPrice ?? tx.maxFeePerGas ?? 0))} wei</dd>
@@ -1058,7 +1191,7 @@ async function viewTx(view, hash) {
         <dt>Block</dt><dd><a class="hash" href="#/blocks/${parseInt(rc.blockNumber, 16)}">${fmtNum(BigInt(rc.blockNumber))}</a></dd>
         <dt>Gas used</dt><dd class="num">${fmtNum(BigInt(rc.gasUsed))}</dd>
         <dt>Effective price</dt><dd class="num">${fmtNum(BigInt(rc.effectiveGasPrice))} wei</dd>
-        <dt>Fee paid</dt><dd class="num">${fmtFstop(BigInt(rc.gasUsed) * BigInt(rc.effectiveGasPrice), 8)} FSTOP</dd>
+        <dt>Fee paid</dt><dd class="num">${fmtFstop(BigInt(rc.gasUsed) * BigInt(rc.effectiveGasPrice), 8)} LDX</dd>
         <dt>Contract</dt><dd class="hash">${rc.contractAddress ? esc(short(rc.contractAddress, 10)) : '—'}</dd>
         <dt>Logs</dt><dd class="num">${rc.logs.length}</dd>
       </dl>${rc.logs.length ? `<h3 style="margin-top:16px">Events</h3>${rc.logs.map((l) => `<div class="card" style="margin-bottom:8px"><div class="tiny muted">address <span class="mono">${esc(short(l.address, 8))}</span> · topic0 <span class="mono">${esc(short(l.topics?.[0], 10))}</span></div><div class="mono tiny" style="margin-top:6px;word-break:break-all">${esc(l.data)}</div></div>`).join('')}` : ''}`

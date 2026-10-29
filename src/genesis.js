@@ -15,7 +15,7 @@ const { hashObject } = require('./crypto');
 
 const GENESIS_SCHEMA = 'fullstop-genesis-v1';
 
-/** Convert a decimal FSTOP amount to the base unit. */
+/** Convert a decimal LDX amount to the base unit. */
 function toBase(units) {
   const [whole, frac = ''] = String(units).split('.');
   const scaled = (frac + '0'.repeat(COIN.decimals)).slice(0, COIN.decimals);
@@ -161,7 +161,7 @@ function validateGenesis(g) {
   const unit = COIN.unit;
 
   if (g.schema !== GENESIS_SCHEMA) errors.push(`unsupported genesis schema ${g.schema}`);
-  if (maxSupply % unit !== 0n) errors.push('max supply must be a whole number of FSTOP');
+  if (maxSupply % unit !== 0n) errors.push('max supply must be a whole number of LDX');
   if (maxSupply > COIN.maxSupply * 2n) errors.push('max supply is implausibly large for the approved model');
   if (initialIssuance > maxSupply) errors.push('initial issuance exceeds the hard cap');
 

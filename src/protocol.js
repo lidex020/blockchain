@@ -2,7 +2,7 @@
 /**
  * Protocol state machine.
  *
- * Ties the two protocol subsystems - the FSTOP supply ledger and the
+ * Ties the two protocol subsystems - the LDX supply ledger and the
  * validator/staking registry - to each block, and owns the rules that only
  * the protocol may apply:
  *
@@ -94,7 +94,7 @@ class Protocol {
     return deltas;
   }
 
-  /** FSTOP the escrow must hold to cover every recorded entitlement. */
+  /** LDX the escrow must hold to cover every recorded entitlement. */
   requiredEscrow() {
     let total = 0n;
     for (const v of Object.values(this.staking.state.validators)) total += v.totalStake;

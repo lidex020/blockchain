@@ -4,12 +4,12 @@
  * bookkeeping.
  *
  * This is protocol-level state (not an ordinary smart contract) because the
- * values it governs - who may propose blocks, how much FSTOP backs each
+ * values it governs - who may propose blocks, how much LDX backs each
  * validator, and what may be slashed - are consensus-critical. Its `commitment()`
  * is mixed into every block's appHash, so two validators that disagree about
  * any of it fail to converge.
  *
- * Coin custody model: delegated FSTOP is held by the protocol module account
+ * Coin custody model: delegated LDX is held by the protocol module account
  * inside the EVM state; this module records who is entitled to it. A user
  * therefore never trusts this file - they trust the invariant
  * `module EVM balance === sum of recorded entitlements`, which the chain

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./FSTOPERC20.sol";
+import "./LDXERC20.sol";
 import "./FullStopAssetRegistry.sol";
 
 /**
  * @title FullStopERC20Factory
- * @notice Deploys a FSTOPERC20 token and registers it with the chain's asset
+ * @notice Deploys an LDXERC20 token and registers it with the chain's asset
  * registry in one transaction. The factory holds no funds, has no admin
  * control over the tokens it creates, and cannot mint, freeze or upgrade them:
  * every privileged switch is chosen by the creator and recorded at deployment.
@@ -36,7 +36,7 @@ contract FullStopERC20Factory {
 
     function createToken(TokenParams calldata p) external returns (address asset) {
         asset = address(
-            new FSTOPERC20(
+            new LDXERC20(
                 p.name,
                 p.symbol,
                 p.decimals,

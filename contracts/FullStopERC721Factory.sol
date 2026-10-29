@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./FSTOPERC721.sol";
+import "./LDXERC721.sol";
 import "./FullStopAssetRegistry.sol";
 
 /**
@@ -29,7 +29,7 @@ contract FullStopERC721Factory {
     }
 
     function createCollection(CollectionParams calldata p) external returns (address asset) {
-        asset = address(new FSTOPERC721(p.name, p.symbol, p.maxSupply, p.contractURI, msg.sender));
+        asset = address(new LDXERC721(p.name, p.symbol, p.maxSupply, p.contractURI, msg.sender));
         registry.register(asset, FullStopAssetRegistry.Kind.ERC721, msg.sender, p.name, p.symbol);
         emit CollectionCreated(asset, msg.sender, p.name, p.symbol, p.maxSupply);
     }
