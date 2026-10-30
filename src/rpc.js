@@ -293,6 +293,39 @@ class RpcServer {
           codeHash: acc.codeHash,
         };
       },
+      fs_addressTransactions: async (address, args = {}) => {
+        const key = ethers.getAddress(String(address)).toLowerCase();
+        const history = chain.addressTransactions.get(key) ?? [];
+        const offset = Number(args.offset ?? 0);
+        const limit = Number(args.limit ?? 25);
+        if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1) {
+          throw new RpcError(-32602, 'offset must be a non-negative integer and limit must be a positive integer');
+        }
+        const pageSize = Math.min(100, limit);
+        const hashes = history.slice().reverse().slice(offset, offset + pageSize);
+        const transactions = hashes.map((hash) => {
+          const position = chain.txPosition.get(hash);
+          const block = position && chain.blocks.get(position.blockNumber);
+          const receipt = chain.receiptByTx.get(hash);
+          const raw = block?.txs[position?.transactionIndex];
+          if (!position || !block || !receipt || !raw) {
+            throw new RpcError(-32000, `transaction index is inconsistent for ${hash}`);
+          }
+          const tx = ethers.Transaction.from(raw);
+          return {
+            hash,
+            blockNumber: position.blockNumber,
+            transactionIndex: position.transactionIndex,
+            from: receipt.from,
+            to: receipt.to,
+            contractAddress: receipt.contractAddress,
+            value: tx.value.toString(),
+            gasUsed: receipt.gasUsed.toString(),
+            status: receipt.status === 1 ? '0x1' : '0x0',
+          };
+        });
+        return { total: String(history.length), offset, limit: pageSize, transactions };
+      },
       /**
        * Assets recorded by the on-chain registry.
        *

@@ -50,6 +50,7 @@ class Chain {
     this.receiptsByHeight = new Map();
     this.receiptByTx = new Map();
     this.txPosition = new Map(); // hash -> {blockNumber, transactionIndex}
+    this.addressTransactions = new Map(); // lowercase address -> chronological transaction summaries
     this.nonceCache = new Map();
     this.head = null;
     this.headEvmBlock = null;
@@ -593,8 +594,15 @@ class Chain {
     this.blockIndex.set(block.hash, block.height);
     this.receiptsByHeight.set(block.height, receipts);
     receipts.forEach((r, i) => {
-      this.receiptByTx.set(r.transactionHash.toLowerCase(), { ...r, blockHeight: block.height });
-      this.txPosition.set(r.transactionHash.toLowerCase(), { blockNumber: block.height, transactionIndex: i });
+      const hash = r.transactionHash.toLowerCase();
+      this.receiptByTx.set(hash, { ...r, blockHeight: block.height });
+      this.txPosition.set(hash, { blockNumber: block.height, transactionIndex: i });
+      const addresses = new Set([r.from, r.to, r.contractAddress].filter(Boolean).map((address) => address.toLowerCase()));
+      for (const address of addresses) {
+        const history = this.addressTransactions.get(address) ?? [];
+        history.push(hash);
+        this.addressTransactions.set(address, history);
+      }
     });
   }
 

@@ -177,6 +177,11 @@ async function run(suite) {
       assertEqual(tx.blockHash, rc.blockHash, 'transaction/block agreement');
       assertEqual(BigInt(tx.transactionIndex), BigInt(rc.transactionIndex), 'transaction index');
       assertEqual(await call(url, 'eth_getTransactionCount', [alice.address, 'latest']), '0x' + (nonce + 1).toString(16), 'nonce advanced');
+      const senderHistory = await call(url, 'fs_addressTransactions', [alice.address, { limit: 5 }]);
+      const recipientHistory = await call(url, 'fs_addressTransactions', [to, { limit: 5 }]);
+      assert(senderHistory.transactions.some((entry) => entry.hash === hash), 'sender history includes the transfer');
+      assert(recipientHistory.transactions.some((entry) => entry.hash === hash), 'recipient history includes the transfer');
+      assertEqual(recipientHistory.transactions.find((entry) => entry.hash === hash).value, toBase('7').toString(), 'address history value');
     });
 
     await suite.test('a replayed transaction is accepted by the pool only once, and never twice', async () => {
