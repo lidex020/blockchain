@@ -2,6 +2,7 @@
   "name": "fullstop-blockchain",
   "version": "0.1.0",
   "description": "Lidex - an independent, public, EVM-compatible Layer 1 with the native coin LDX",
+  "homepage": "https://lidex.tech",
   "license": "MIT",
   "private": true,
   "type": "commonjs",
