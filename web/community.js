@@ -28,6 +28,14 @@
     return `<a class="${className}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
   }
 
+  function socialIconLink(key, label, path) {
+    const url = links[key];
+    if (!url) throw new Error(`Missing Lidex community link: ${key}`);
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" aria-label="Lidex on ${label}">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${path}"/></svg>
+    </a>`;
+  }
+
   function formLink(key, label, className = 'btn') {
     const value = links.forms[key];
     let href = '#community-form-pending';
@@ -291,7 +299,12 @@
     return `<div class="community-wrap"><nav class="community-nav" aria-label="Community sections">${nav}</nav>${content}
       <div class="community-form-notice" id="communityFormNotice" role="status" aria-live="polite" hidden></div>
       <footer class="community-section community-muted"><div class="row between"><span>Lidex Community · Independent. Open. Built to last.</span>
-        <div class="community-social-links">${socialLink('telegram', 'Telegram', '')}${socialLink('x', 'X', '')}${socialLink('linkedin', 'LinkedIn', '')}${socialLink('youtube', 'YouTube', '')}</div></div>
+        <nav class="social-links" aria-label="Social media">
+          ${socialIconLink('x', 'X', 'M18.9 2H22l-6.78 7.75L23.2 22h-6.25l-4.9-7.45L5.52 22H2.4l7.25-8.29L1.8 2h6.4l4.43 6.78L18.9 2Zm-1.1 18h1.73L7.28 3.9H5.42L17.8 20Z')}
+          ${socialIconLink('telegram', 'Telegram', 'M21.9 4.2 18.6 20c-.25 1.12-.91 1.4-1.85.87l-5.1-3.76-2.46 2.37c-.27.27-.5.5-1.03.5l.37-5.2 9.46-8.55c.41-.37-.09-.57-.64-.2L5.66 13.4.62 11.83c-1.1-.34-1.12-1.1.23-1.63L20.56 2.6c.91-.34 1.71.22 1.34 1.6Z')}
+          ${socialIconLink('linkedin', 'LinkedIn', 'M20.45 2H3.55C2.69 2 2 2.68 2 3.53v16.94c0 .85.69 1.53 1.55 1.53h16.9c.86 0 1.55-.68 1.55-1.53V3.53c0-.85-.69-1.53-1.55-1.53ZM8.06 18.74H5.12V9.25h2.94v9.49ZM6.59 7.95a1.7 1.7 0 1 1 0-3.4 1.7 1.7 0 0 1 0 3.4Zm12.15 10.79H15.8v-4.62c0-1.1-.02-2.51-1.53-2.51-1.53 0-1.76 1.2-1.76 2.43v4.7H9.58V9.25h2.82v1.3h.04c.39-.74 1.35-1.53 2.78-1.53 2.97 0 3.52 1.95 3.52 4.49v5.23Z')}
+          ${socialIconLink('youtube', 'YouTube', 'M23.5 6.2a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.51A3.02 3.02 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.12 2.14c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3.02 3.02 0 0 0 2.12-2.14A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8ZM9.55 15.58V8.42L15.82 12l-6.27 3.58Z')}
+        </nav></div>
         <p class="community-status-note">Community pages are informational only. No account data, applications, votes, or submissions are collected here.</p>
       </footer></div>`;
   }
