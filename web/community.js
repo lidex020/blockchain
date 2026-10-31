@@ -123,16 +123,16 @@
       ['?', 'Contact and Support', 'Contact the Lidex team with a question or support request.', 'support', 'Contact Support'],
     ];
     return `<div class="eyebrow">Get involved</div><h1 class="community-page-title">Programs &amp; Applications</h1>
-      <p class="community-page-lede">Choose a Lidex program below. Each action is ready for its corresponding Typeform URL; links can be added in the community link configuration when available.</p>
+      <p class="community-page-lede">Choose a Lidex program below to open its application or registration form on Typeform. These links are maintained centrally in the community link configuration.</p>
       <div class="community-grid">${actions.map(([icon, title, description, key, label]) => formCard(icon, title, description, key, label)).join('')}</div>
       <section class="community-section community-policy">
         ${sectionHeading('Reward and support policy', 'Approved participants may qualify for programme-specific support. Applying or participating does not guarantee a reward, grant, or selection.')}
         <p>Depending on the programme, approved participants may receive LDX rewards for verified contributions, milestone-based rewards, recognition, certificates, community badges, ecosystem grants, or development support. Eligibility, verification, available budget, and approval apply. Specific amounts, distribution schedules, and conditions will be shared through official Lidex channels and programme agreements.</p>
-        <p>Never provide wallet passwords, private keys, or recovery phrases. Forms are hosted externally when their official Typeform links are configured; this website does not collect applications.</p>
+        <p>Never provide wallet passwords, private keys, or recovery phrases. Application forms are hosted by Typeform; this website does not collect or store applications.</p>
         <details class="community-consent"><summary>Privacy and consent text for the Typeforms</summary>
           <p>By submitting the external form, you agree that Lidex may use the information provided to review your application, communicate with you, and administer the relevant community programme.</p>
           <p>Your information will be handled according to the applicable Lidex privacy policy. You may contact Lidex on Telegram at <a href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">@lidexblockchain</a> with questions about your submitted information.</p>
-          <p>This statement and a required consent checkbox should be added to each relevant Typeform when its URL is configured.</p>
+          <p>This statement and a required consent checkbox should be included in each relevant Typeform. Review the external form’s privacy and consent information before submitting.</p>
         </details>
       </section>
       <p class="community-status-note">Questions? Contact Lidex on Telegram: <a href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">@lidexblockchain</a>.</p>`;
@@ -184,7 +184,7 @@
           <article class="card community-card"><h3>Recognition and rewards</h3><p>Approved participants may qualify for milestone-based LDX rewards or other programme benefits, subject to eligibility, verification, available budget, and approval. Applying does not guarantee selection or rewards.</p></article>
         </div>
       </section>
-      <section class="community-section community-bottom-cta">${sectionHeading('Interested in becoming an ambassador?', 'Selected participants may qualify for programme benefits or milestone-based rewards, subject to eligibility, verification, available budget, and approval. Applying does not guarantee a reward or selection.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Interested in becoming an ambassador?', 'The application button opens the Lidex Ambassador Typeform. Selected participants may qualify for programme benefits or milestone-based rewards, subject to eligibility, verification, available budget, and approval. Applying does not guarantee a reward or selection.')}
         ${formLink('ambassador', 'Ambassador application', 'btn')}</section>`;
   }
 
@@ -197,7 +197,7 @@
       <section class="community-section">${sectionHeading('Support and rewards')}
         <p class="community-policy-copy">Approved contributors may qualify for milestone-based rewards, LDX incentives, technical support, collaboration, or development support. Eligibility, milestones, available budget, and approval apply; no reward or grant is guaranteed.</p>
       </section>
-      <section class="community-section community-bottom-cta">${sectionHeading('Interested in building on Lidex?', 'The Typeform destination is a placeholder until the official link is provided.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Interested in building on Lidex?', 'The application button opens the Lidex Developer Typeform.')}
         ${formLink('developer', 'Developer application', 'btn')}</section>`;
   }
 
@@ -205,7 +205,7 @@
     return `<div class="eyebrow">Network participation</div><h1 class="community-page-title">Validator Interest</h1>
       <p class="community-page-lede">Lidex welcomes individuals and organisations interested in supporting the security, reliability, and decentralisation of its blockchain network.</p>
       <section class="community-section">${emptyState('Express interest in becoming a validator', 'This is an expression of interest only. It does not guarantee validator approval, network access, or staking rewards. Technical requirements will be shared when available.')}</section>
-      <section class="community-section community-bottom-cta">${sectionHeading('Share your validator interest', 'The Typeform destination is a placeholder until the official link is provided. Never share private keys, wallet passwords, or recovery phrases.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Share your validator interest', 'The button opens the Lidex Validator Interest Typeform. This is an expression of interest, not a guarantee of validator approval or staking rewards. Never share private keys, wallet passwords, or recovery phrases.')}
         ${formLink('validator', 'Validator interest form', 'btn')}</section>`;
   }
 
@@ -215,7 +215,7 @@
       <section class="community-section">${sectionHeading('Explore collaboration')}
         <div class="community-chip-list">${['Technology integration', 'Community collaboration', 'Marketing and media', 'Ecosystem integration', 'Education', 'Events', 'Business partnerships'].map((item) => `<span class="community-chip">${item}</span>`).join('')}</div>
       </section>
-      <section class="community-section community-bottom-cta">${sectionHeading('Propose a partnership', 'Share your organisation and collaboration idea through the Typeform when the official URL is provided. A submission does not guarantee acceptance.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Propose a partnership', 'The application button opens the Lidex Partnership Typeform. A submission does not guarantee acceptance.')}
         ${formLink('partnership', 'Partnership application', 'btn')}</section>`;
   }
 
@@ -224,7 +224,7 @@
       <p class="community-page-lede">Find Lidex community calls, workshops, developer sessions, and local meetups. Event dates and registration are not connected to this site.</p>
       <div class="community-chip-list" aria-label="Event types">${['Community calls', 'Workshops', 'Developer sessions', 'Local meetups'].map((label) => `<span class="community-chip">${label}</span>`).join('')}</div>
       <section class="community-section">${emptyState('No upcoming events published', 'No dates or registration links are currently available. Follow official Lidex channels for announcements.')}</section>
-      <section class="community-section community-bottom-cta">${sectionHeading('Register for an event', 'Event dates and registration are not available yet. The registration Typeform link will be added when provided.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Register for an event', 'Event dates are not published yet. Use the registration Typeform to express your interest and follow official Lidex channels for event updates.')}
         ${formLink('eventRegistration', 'Register for an Event', 'btn')}</section>`;
   }
 
@@ -249,7 +249,7 @@
       </section>
       <section class="community-section">${emptyState('Public contributor profiles are not available', 'No names, rankings, badges, activity counts, or contribution totals are displayed because a verified directory is not connected.')}</section>
       <p class="community-policy-copy">Verified contributions may qualify for recognition or approved LDX rewards, subject to programme eligibility, verification, available budget, and approval. Applying or contributing does not guarantee a reward.</p>
-      <section class="community-section community-bottom-cta">${sectionHeading('Want to contribute?', 'Use this placeholder interest button when the official Typeform link is ready, or start a conversation in Telegram.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Want to contribute?', 'The interest button opens the Lidex Contributor Typeform, or start a conversation in Telegram.')}
         <div class="community-actions">${formLink('contributor', 'Contributor interest', 'btn')}${socialLink('telegram', 'Join Telegram', 'btn ghost')}</div></section>`;
   }
 
@@ -257,10 +257,10 @@
     const faq = [
       ['What is the Lidex community site?', 'These are static information pages. They do not have accounts, a forum backend, application processing, or data storage.'],
       ['Where can I talk with the community?', `Use the official Telegram channel: ${links.telegram}. Public discussion links are also provided on the Discussions page.`],
-      ['How do I apply to a program?', 'Application buttons are prepared, but their Typeform URLs are placeholders. No application is submitted or stored until official destinations are configured.'],
+      ['How do I apply to a program?', 'Choose a program and open its Typeform using the application buttons. Typeform hosts the form; this website does not collect or store application data.'],
       ['Is a governance vote happening here?', 'No. The website does not accept or count votes. Any official governance process will be announced separately.'],
       ['Are grant funds or ambassador rewards guaranteed?', 'No. Approved participants may qualify for LDX rewards, milestone support, recognition, or grants depending on the programme. Eligibility, verification, available budget, and approval apply. Applying does not guarantee a reward.'],
-      ['How do I get help with the network?', 'Use the Contact Support button or review the Lidex public channels. The support form destination will be added when the official Typeform URL is provided. Never send passwords, private keys, or recovery phrases.'],
+      ['How do I get help with the network?', 'Use the Contact Support button to open the Lidex support Typeform, or review the Lidex public channels. Never send passwords, private keys, or recovery phrases.'],
       ['How is my application information used?', 'When the external Typeform links are configured, each relevant form should include the privacy and consent statement supplied in the Lidex application-form brief. This website does not collect or store applications.'],
     ];
     return `<div class="eyebrow">Community</div><h1 class="community-page-title">Help Center</h1>
@@ -268,7 +268,7 @@
       <div class="community-faq-search"><label for="communityFaqSearch">Search help topics</label><input id="communityFaqSearch" type="search" placeholder="Search a question or keyword" autocomplete="off"></div>
       <div class="community-faq-list">${faq.map(([question, answer]) => `<details data-community-faq><summary>${question}</summary><p>${answer}</p></details>`).join('')}</div>
       <p id="communityFaqEmpty" class="community-status-note" hidden>No help topics match that search.</p>
-      <section class="community-section community-bottom-cta">${sectionHeading('Still need help?', 'Support form URL is a placeholder until the official Typeform destination is provided.')}
+      <section class="community-section community-bottom-cta">${sectionHeading('Still need help?', 'The support button opens the Lidex Contact and Support Typeform. Never include passwords, private keys, or recovery phrases.')}
         <div class="community-actions">${formLink('support', 'Contact Support', 'btn')}<a class="btn ghost" href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">Telegram @lidexblockchain</a></div></section>`;
   }
 
