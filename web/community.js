@@ -123,11 +123,11 @@
         <p>Never provide wallet passwords, private keys, or recovery phrases. Forms are hosted externally when their official Typeform links are configured; this website does not collect applications.</p>
         <details class="community-consent"><summary>Privacy and consent text for the Typeforms</summary>
           <p>By submitting the external form, you agree that Lidex may use the information provided to review your application, communicate with you, and administer the relevant community programme.</p>
-          <p>Your information will be handled according to the applicable Lidex privacy policy. You may contact <a href="mailto:Lidex020@gmail.com">Lidex020@gmail.com</a> with questions about your submitted information.</p>
+          <p>Your information will be handled according to the applicable Lidex privacy policy. You may contact Lidex on Telegram at <a href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">@lidexblockchain</a> with questions about your submitted information.</p>
           <p>This statement and a required consent checkbox should be added to each relevant Typeform when its URL is configured.</p>
         </details>
       </section>
-      <p class="community-status-note">Questions? Contact <a href="mailto:Lidex020@gmail.com">Lidex020@gmail.com</a>.</p>`;
+      <p class="community-status-note">Questions? Contact Lidex on Telegram: <a href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">@lidexblockchain</a>.</p>`;
   }
 
   function announcementsPage() {
@@ -261,7 +261,7 @@
       <div class="community-faq-list">${faq.map(([question, answer]) => `<details data-community-faq><summary>${question}</summary><p>${answer}</p></details>`).join('')}</div>
       <p id="communityFaqEmpty" class="community-status-note" hidden>No help topics match that search.</p>
       <section class="community-section community-bottom-cta">${sectionHeading('Still need help?', 'Support form URL is a placeholder until the official Typeform destination is provided.')}
-        <div class="community-actions">${formLink('support', 'Contact Support', 'btn')}${socialLink('telegram', 'Ask in Telegram', 'btn ghost')}<a class="btn ghost" href="mailto:Lidex020@gmail.com">Email Lidex</a></div></section>`;
+        <div class="community-actions">${formLink('support', 'Contact Support', 'btn')}<a class="btn ghost" href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">Telegram @lidexblockchain</a></div></section>`;
   }
 
   const pageRenderers = {
