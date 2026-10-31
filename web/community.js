@@ -281,7 +281,7 @@
       <div class="community-actions">${socialLink('telegram', 'Join Lidex on Telegram', 'btn')}${socialLink('x', 'Follow Lidex on X', 'btn ghost')}<a class="btn ghost" href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">Contact @lidexblockchain</a></div>
     </section>
     <section class="community-section community-bottom-cta" id="community-developer-programme">
-      ${sectionHeading('Developer Programme', 'Interested in contributing to Lidex? Apply to join the developer programme. This application link is awaiting its Typeform URL.')}
+      ${sectionHeading('Developer Programme', 'Interested in contributing to Lidex? Apply to join the developer programme. The application opens the Lidex Developer Typeform.')}
       ${formLink('developerPortal', 'Apply to Build on Lidex', 'btn')}
     </section>`;
   }

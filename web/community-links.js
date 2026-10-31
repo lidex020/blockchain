@@ -6,7 +6,7 @@ window.LIDEX_COMMUNITY_LINKS = Object.freeze({
   forms: Object.freeze({
     ambassador: 'https://form.typeform.com/to/WVvS8MMA',
     developer: 'https://form.typeform.com/to/WGzJ4yYU',
-    developerPortal: '',
+    developerPortal: 'https://form.typeform.com/to/WGzJ4yYU',
     validator: 'https://form.typeform.com/to/NVhPqQGJ',
     grant: 'https://form.typeform.com/to/GBAxigB0',
     partnership: 'https://form.typeform.com/to/xnCT5TEj',
