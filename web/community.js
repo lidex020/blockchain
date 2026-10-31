@@ -66,6 +66,21 @@
     </article>`;
   }
 
+  function resourceCard(icon, title, description, key, availability, actionLabel) {
+    const url = links.resources[key];
+    if (url && !/^https?:\/\//i.test(url) && (!url.startsWith('/') || url.startsWith('//'))) {
+      throw new Error(`Community resource link "${key}" must be HTTPS or a same-origin path.`);
+    }
+    const action = url
+      ? `<a class="community-resource-action" href="${escapeHtml(url)}"${/^https?:\/\//i.test(url) ? ' target="_blank" rel="noopener noreferrer"' : ''}>${actionLabel} <span aria-hidden="true">↗</span></a>`
+      : `<span class="community-resource-action unavailable">${availability}</span>`;
+    const statusClass = availability === 'Available' ? ' available' : ' conditional';
+    return `<article class="card community-card community-resource-card">
+      <div class="community-resource-top"><div class="community-icon" aria-hidden="true">${icon}</div><span class="community-resource-status${statusClass}">${availability}</span></div>
+      <h3>${title}</h3><p>${description}</p>${action}
+    </article>`;
+  }
+
   function emptyState(title, description, action = '') {
     return `<div class="community-empty"><h3>${title}</h3><p>${description}</p>${action}</div>`;
   }
@@ -189,16 +204,86 @@
   }
 
   function developerPage() {
-    return `<div class="eyebrow">Community programs</div><h1 class="community-page-title">Build on Lidex</h1>
-      <p class="community-page-lede">Lidex welcomes developers and technical contributors working on applications, infrastructure, smart contracts, developer tools, wallets, testing, and documentation.</p>
-      <section class="community-section">${sectionHeading('Areas to contribute')}
-        <div class="community-chip-list">${['Blockchain development', 'Smart contracts', 'Frontend and backend', 'Wallet integration', 'Explorer and tooling', 'Security and testing', 'Documentation'].map((item) => `<span class="community-chip">${item}</span>`).join('')}</div>
-      </section>
-      <section class="community-section">${sectionHeading('Support and rewards')}
-        <p class="community-policy-copy">Approved contributors may qualify for milestone-based rewards, LDX incentives, technical support, collaboration, or development support. Eligibility, milestones, available budget, and approval apply; no reward or grant is guaranteed.</p>
-      </section>
-      <section class="community-section community-bottom-cta">${sectionHeading('Interested in building on Lidex?', 'The application button opens the Lidex Developer Typeform.')}
-        ${formLink('developer', 'Developer application', 'btn')}</section>`;
+    return `<section class="community-hero community-developer-hero">
+      <div class="eyebrow">Lidex developer portal</div>
+      <h1>Build on Lidex.</h1>
+      <p>Explore the Lidex network, build EVM-compatible applications, and help shape the tools and infrastructure developers need.</p>
+      <div class="community-actions">
+        <a class="btn" href="#community-resources" data-community-scroll="community-resources">Explore developer resources <span aria-hidden="true">↓</span></a>
+        <a class="btn ghost" href="#community-developer-programme" data-community-scroll="community-developer-programme">Apply to Build on Lidex <span aria-hidden="true">→</span></a>
+      </div>
+      <p class="community-resource-note">Resource availability is identified on each card. No public RPC endpoint or hosted documentation portal is currently configured here.</p>
+    </section>
+    <nav class="community-dev-nav" aria-label="Developer page sections">
+      <a href="#community-build" data-community-scroll="community-build">What you can build</a><a href="#community-resources" data-community-scroll="community-resources">Documentation &amp; network</a>
+      <a href="#community-contracts" data-community-scroll="community-contracts">Smart contracts</a><a href="#community-tools" data-community-scroll="community-tools">Tools &amp; APIs</a>
+      <a href="#community-guides" data-community-scroll="community-guides">Tutorials</a><a href="#community-testnet" data-community-scroll="community-testnet">Testnet</a>
+      <a href="#community-grants" data-community-scroll="community-grants">Grants</a><a href="#community-support" data-community-scroll="community-support">Community support</a>
+    </nav>
+    <section class="community-section" id="community-build">
+      ${sectionHeading('What you can build', 'Lidex is an EVM-compatible Layer 1. Explore ideas across the ecosystem; listed categories are opportunities, not a claim that specific products are already deployed.')}
+      <div class="community-grid">
+        ${card('◈', 'DeFi', 'Explore decentralized finance applications and protocol integrations.', '', '')}
+        ${card('⌘', 'Smart contracts', 'Write and test EVM-compatible contracts using Solidity.', '', '')}
+        ${card('▧', 'NFTs and digital assets', 'Create token, collection, and multi-token experiences.', '', '')}
+        ${card('◉', 'Wallets', 'Connect EVM-compatible wallets to Lidex network deployments.', '', '')}
+        ${card('ϟ', 'Infrastructure', 'Contribute to node operations, validators, and network integrations.', '', '')}
+        ${card('⚒', 'Developer tools', 'Build explorers, SDKs, APIs, examples, and developer workflows.', '', '')}
+      </div>
+    </section>
+    <section class="community-section" id="community-resources">
+      ${sectionHeading('Developer documentation', 'A dedicated documentation destination is planned. Until it is published, use the resources below and check each availability label.')}
+      <div class="community-grid two">
+        ${resourceCard('▤', 'Lidex developer documentation', 'Guides and reference documentation for developing on Lidex.', 'documentation', 'Not published', 'Open documentation')}
+        ${resourceCard('◈', 'Network configuration', 'The running node can serve its network name, chain ID, RPC and WebSocket URLs, currency, and contract addresses from its configuration endpoint. Values depend on that node.', 'rpcConfig', 'Node-dependent', 'View node configuration')}
+        ${resourceCard('↗', 'Public RPC endpoint', 'No shared public RPC endpoint is configured in this portal. Use the network configuration from your own authorized Lidex node.', 'rpcEndpoint', 'Not published', 'Open RPC endpoint')}
+      </div>
+    </section>
+    <section class="community-section" id="community-contracts">
+      ${sectionHeading('Smart contract development', 'Contract source files are available in the repository. A dedicated Solidity guide and deployment walkthrough are not published yet.')}
+      <div class="community-grid two">
+        ${resourceCard('⌘', 'Solidity contract examples', 'Browse the Lidex contract sources, including token and asset factory contracts.', 'solidityContracts', 'Available', 'Browse contract sources')}
+        ${resourceCard('⇧', 'Deployment guide', 'Step-by-step Lidex-specific deployment instructions are still being prepared.', 'deploymentGuide', 'In development', 'Open deployment guide')}
+      </div>
+    </section>
+    <section class="community-section" id="community-tools">
+      ${sectionHeading('Developer tools and APIs', 'The source repository and local devnet command are available. No standalone SDK package or hosted API reference is linked here.')}
+      <div class="community-grid">
+        ${resourceCard('⌥', 'Lidex source repository', 'Explore node, CLI, wallet, explorer, and integration source code.', 'developerRepository', 'Available', 'Open GitHub repository')}
+        ${resourceCard('⌁', 'JSON-RPC API reference', 'The node implements EVM JSON-RPC methods. A dedicated, public API reference is not published yet.', 'apiDocumentation', 'In development', 'Open API reference')}
+        ${resourceCard('⌘', 'SDKs and integrations', 'No separately published Lidex SDK or integration package is listed yet.', 'sdk', 'Not published', 'Explore SDKs')}
+      </div>
+    </section>
+    <section class="community-section" id="community-guides">
+      ${sectionHeading('Tutorials and guides', 'Developer tutorials and guided examples have not yet been published.')}
+      <div class="community-grid two">
+        ${resourceCard('▷', 'Tutorials', 'A link will be added when official Lidex developer tutorials are available.', 'tutorials', 'In development', 'Browse tutorials')}
+        ${resourceCard('▧', 'Validator operations', 'Validator operation notes are available in the repository documentation.', 'validatorOperations', 'Available', 'Read validator notes')}
+      </div>
+    </section>
+    <section class="community-section" id="community-testnet">
+      ${sectionHeading('Testnet resources', 'The repository provides scripts for creating and running a local development network. A shared public testnet is not configured in this portal.')}
+      <div class="community-grid two">
+        ${resourceCard('⚒', 'Local development network', 'Start the project’s local devnet with the existing npm script. This is a local development environment, not a public testnet.', 'localDevnetGuide', 'Available', 'View devnet launcher')}
+        ${resourceCard('◎', 'Shared testnet', 'No public testnet chain configuration, RPC endpoint, or faucet is linked here.', 'sharedTestnet', 'Not published', 'View testnet details')}
+      </div>
+      <div class="community-command"><span>Local devnet</span><code>npm run devnet</code><span>Run from the project repository.</span></div>
+    </section>
+    <section class="community-section" id="community-grants">
+      ${sectionHeading('Developer grants and rewards', 'Applications are reviewed under programme eligibility, verification, available budget, milestones, and approval. Applying does not guarantee funding or a reward.')}
+      <div class="community-grid two">
+        <article class="card community-card"><h3>Build with programme support</h3><p>Developers may apply for an ecosystem grant or propose milestone-based contributions. Any support depends on the approved programme terms.</p><a class="community-resource-action" href="#/community/grants">Learn about Lidex grants <span aria-hidden="true">→</span></a></article>
+        <article class="card community-card"><h3>Potential rewards</h3><p>Approved participants may qualify for LDX rewards for verified contributions or agreed milestones. No fixed amount or payment schedule is promised on this page.</p></article>
+      </div>
+    </section>
+    <section class="community-section community-bottom-cta" id="community-support">
+      ${sectionHeading('Developer community and support', 'Connect with the community for discussion. Do not share wallet passwords, private keys, or recovery phrases.')}
+      <div class="community-actions">${socialLink('telegram', 'Join Lidex on Telegram', 'btn')}${socialLink('x', 'Follow Lidex on X', 'btn ghost')}<a class="btn ghost" href="https://t.me/lidexblockchain" target="_blank" rel="noopener noreferrer">Contact @lidexblockchain</a></div>
+    </section>
+    <section class="community-section community-bottom-cta" id="community-developer-programme">
+      ${sectionHeading('Developer Programme', 'Interested in contributing to Lidex? Apply to join the developer programme. This application link is awaiting its Typeform URL.')}
+      ${formLink('developerPortal', 'Apply to Build on Lidex', 'btn')}
+    </section>`;
   }
 
   function validatorsPage() {
@@ -310,6 +395,16 @@
   }
 
   document.addEventListener('click', (event) => {
+    const sectionLink = event.target.closest('a[data-community-scroll]');
+    if (sectionLink) {
+      const section = document.getElementById(sectionLink.dataset.communityScroll);
+      if (section) {
+        event.preventDefault();
+        const top = window.scrollY + section.getBoundingClientRect().top - 100;
+        window.scrollTo(0, Math.max(0, top));
+        return;
+      }
+    }
     const anchor = event.target.closest('a[data-community-form]');
     if (!anchor || links.forms[anchor.dataset.communityForm]) return;
     event.preventDefault();

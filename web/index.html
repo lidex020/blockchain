@@ -436,6 +436,26 @@
   .community-consent { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; }
   .community-consent summary { cursor: pointer; font-weight: 600; }
   .community-consent a { color: var(--accent-2); }
+  .community-developer-hero { background: radial-gradient(ellipse at 82% 25%, rgba(32, 168, 91, .2), transparent 42%), radial-gradient(ellipse at 5% 90%, rgba(32, 168, 91, .12), transparent 44%), linear-gradient(140deg, rgba(32, 168, 91, .1), rgba(255,255,255,.025)); }
+  .community-resource-note { max-width: 760px !important; color: var(--muted) !important; font-size: clamp(13px, .8vw, 16px) !important; margin: 18px 0 0 !important; }
+  .community-dev-nav { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; margin: 20px 0 30px; padding: 4px 1px 10px; scrollbar-width: thin; }
+  .community-dev-nav a { flex: 0 0 auto; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: clamp(12px, .75vw, 15px); }
+  .community-dev-nav a:hover { color: var(--accent-2); border-color: rgba(129,227,168,.38); }
+  .community-resource-card { display: flex; flex-direction: column; align-items: flex-start; }
+  .community-resource-card > p { flex: 1; }
+  .community-resource-top { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .community-resource-status { display: inline-flex; padding: 5px 9px; border: 1px solid rgba(255,204,102,.28); border-radius: 999px; color: var(--warn); font-size: clamp(10px, .65vw, 12px); line-height: 1.3; white-space: nowrap; }
+  .community-resource-status.available { color: var(--good); border-color: rgba(72,213,151,.32); }
+  .community-resource-status.conditional { color: var(--accent-2); border-color: rgba(129,227,168,.28); }
+  .community-resource-action { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-2); font-weight: 600; font-size: clamp(13px, .8vw, 16px); }
+  .community-resource-action:hover { text-decoration: underline; }
+  .community-resource-action.unavailable { color: var(--muted); font-weight: 500; cursor: default; }
+  .community-command { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; margin-top: 16px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+  .community-command span:first-child { color: var(--muted); }
+  .community-command code { padding: 7px 10px; border-radius: 8px; color: var(--accent-2); background: rgba(0,0,0,.32); font: 13px var(--mono); }
+  .community-command span:last-child { color: var(--dim); font-size: 13px; }
+  .community-resource-action:focus-visible, .community-dev-nav a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+  #communityView [id^="community-"] { scroll-margin-top: 120px; }
   .community-header nav { min-width: 0; overflow-x: auto; scrollbar-width: thin; }
   .community-header nav a { flex: 0 0 auto; white-space: nowrap; }
   @media (min-width: 1440px) {
@@ -468,7 +488,7 @@
   <nav class="landing-nav" aria-label="Main navigation">
     <a href="#network">Network</a>
     <a href="#ecosystem">Ecosystem</a>
-    <a href="#developers">Developers</a>
+    <a href="#/community/developers">Developers</a>
     <a href="#/community">Community</a>
   </nav>
   <a class="btn ghost landing-launch" href="#/">Launch Explorer <span aria-hidden="true">↗</span></a>
@@ -521,7 +541,7 @@
         <p class="landing-lede">One independent blockchain.<br>Limitless possibilities.</p>
         <div class="landing-actions">
           <a class="btn" href="#/blocks">Explore the Network <span aria-hidden="true">→</span></a>
-          <a class="btn ghost" href="#developers">Build on Lidex <span aria-hidden="true">→</span></a>
+          <a class="btn ghost" href="#/community/developers">Build on Lidex <span aria-hidden="true">→</span></a>
         </div>
         <div class="landing-live" id="landingLive">
           <span class="live-dot" aria-hidden="true"></span>
@@ -573,7 +593,7 @@
         <div class="landing-icon" aria-hidden="true">⊞</div>
         <h3>Build decentralized apps</h3>
         <p>Connect with the live RPC endpoint and build on EVM-compatible infrastructure.</p>
-        <a href="#/blocks">Explore developer network <span aria-hidden="true">→</span></a>
+        <a href="#/community/developers">Open developer portal <span aria-hidden="true">→</span></a>
       </article>
     </div>
   </section>
