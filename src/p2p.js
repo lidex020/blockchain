@@ -17,7 +17,7 @@
  */
 
 const { MessageType } = require('./block');
-const { FullStopBlock } = require('./block');
+const { LidexBlock } = require('./block');
 const { createLogger } = require('./logger');
 const { PROTOCOL } = require('./constants');
 
@@ -164,7 +164,7 @@ class P2P {
           break;
         }
         try {
-          const block = FullStopBlock.fromJSON(rec);
+          const block = LidexBlock.fromJSON(rec);
           // Same verification path as a live proposal: sync never trusts a peer.
           await this.chain.commitBlock(block, { source: 'sync' });
           this.stats.syncApplied += 1;

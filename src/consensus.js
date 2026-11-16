@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Full Stop Consensus (FSC) v0.1 - round-based Byzantine-fault-tolerant
+ * Lidex Consensus (FSC) v0.1 - round-based Byzantine-fault-tolerant
  * finality over the chain's own validator set.
  *
  * Flow per height:
@@ -29,7 +29,7 @@
  */
 
 const { ethers } = require('ethers');
-const { FullStopBlock, makeVote, verifyVote, ZERO_HASH, MessageType } = require('./block');
+const { LidexBlock, makeVote, verifyVote, ZERO_HASH, MessageType } = require('./block');
 const { hashObject } = require('./crypto');
 const { createLogger } = require('./logger');
 const { BLOCK } = require('./constants');
@@ -331,7 +331,7 @@ class Consensus {
     if (this.proposal && this.proposal.block.hash === msg.block.blockHash) {
       // already seen, but a later round must still prevote
     }
-    const block = FullStopBlock.fromJSON(msg.block);
+    const block = LidexBlock.fromJSON(msg.block);
     if (block.height !== msg.height || block.header.round !== msg.round) {
       log.debug('proposal metadata inconsistent, ignoring', { from });
       return;
@@ -398,13 +398,19 @@ class Consensus {
   }
 
   /**
-   * Consensus messages are signed by the validator's *consensus* key when the
-   * node holds one, otherwise by the operator key. The `validator` field of a
-   * vote is always the address matching the key that signed it, so a verifier
-   * recovers the signer and looks the power up under either name.
+   * Consensus messages use the configured consensus key whenever that field is
+   * present. An incomplete configured key is an error, never a reason to sign
+   * with the separate operator key. The `validator` field of a vote always
+   * identifies the key that signed it.
    */
   _signer() {
-    if (this.identity.consensusPrivateKey) {
+    if (Object.prototype.hasOwnProperty.call(this.identity, 'consensusPrivateKey')) {
+      if (typeof this.identity.consensusPrivateKey !== 'string' || this.identity.consensusPrivateKey.length === 0) {
+        throw new Error('configured consensus private key is empty or invalid');
+      }
+      if (!this.identity.consensusAddress) {
+        throw new Error('configured consensus private key has no consensus address');
+      }
       return { privateKey: this.identity.consensusPrivateKey, address: this.identity.consensusAddress };
     }
     return { privateKey: this.identity.privateKey, address: this.identity.address };
@@ -602,7 +608,7 @@ class Consensus {
 
   async receiveCommit(msg, { from = 'network' } = {}) {
     if (msg.height !== this.chain.head.height + 1) return;
-    const block = msg.block ? FullStopBlock.fromJSON(msg.block) : this.chain.getBlock(msg.blockHash);
+    const block = msg.block ? LidexBlock.fromJSON(msg.block) : this.chain.getBlock(msg.blockHash);
     if (!block) throw new Error(`commit from ${from} did not include a block at height ${msg.height}`);
     if (
       block.height !== msg.height ||

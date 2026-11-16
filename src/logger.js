@@ -2,12 +2,12 @@
 /**
  * Structured logger. Levels: trace < debug < info < warn < error < silent.
  * Node processes write one JSON object per line to stdout when
- * FULLSTOP_LOG=json, otherwise a compact human line.
+ * LIDEX_LOG=json, otherwise a compact human line.
  */
 
 const LEVELS = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, silent: 100 };
-const configured = (process.env.FULLSTOP_LOG_LEVEL || 'info').toLowerCase();
-const fmt = process.env.FULLSTOP_LOG === 'json' ? 'json' : 'text';
+const configured = (process.env.LIDEX_LOG_LEVEL || 'info').toLowerCase();
+const fmt = process.env.LIDEX_LOG === 'json' ? 'json' : 'text';
 const threshold = LEVELS[configured] ?? LEVELS.info;
 
 function emit(level, name, msg, fields) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Generate a Full Stop network configuration: genesis document, validator keys
+ * Generate a Lidex network configuration: genesis document, validator keys
  * and test accounts.
  *
  * This is a *development* bootstrap. A mainnet genesis would be produced by a
@@ -40,7 +40,7 @@ function main() {
   const validatorCount = Number(arg('validators', '4'));
   const outDir = path.resolve(arg('out', path.join(__dirname, '..', 'data', 'devnet')));
   const chainId = BigInt(arg('chain-id', String(CHAIN.testnetChainId)));
-  const networkName = arg('name', 'Full Stop Devnet');
+  const networkName = arg('name', 'Lidex Devnet');
   const blockTime = Number(arg('block-time', String(BLOCK.targetBlockTimeMs)));
   const unbonding = Number(arg('unbonding-blocks', '40'));
   const distribution = Number(arg('distribution-interval', '20'));
@@ -106,7 +106,7 @@ function main() {
   // protocol module account, which no key controls: after genesis the factory
   // set can only change through a governance-approved protocol upgrade.
   const ifaceFor = (name) => new ethers.Interface(artifacts[name].abi);
-  const registryIface = ifaceFor('FullStopAssetRegistry');
+  const registryIface = ifaceFor('LidexAssetRegistry');
   /** creation code = compiled initcode || ABI-encoded constructor arguments */
   const deployData = (name, args) => {
     const encoded = args.length ? ifaceFor(name).encodeDeploy(args).slice(2) : '';
@@ -141,10 +141,10 @@ function main() {
   };
 
   const jobs = [
-    ['FullStopAssetRegistry', registry, deployData('FullStopAssetRegistry', [[erc20Factory, erc721Factory, erc1155Factory]]), 12_000_000n],
-    ['FullStopERC20Factory', erc20Factory, deployData('FullStopERC20Factory', [registry]), 8_000_000n],
-    ['FullStopERC721Factory', erc721Factory, deployData('FullStopERC721Factory', [registry]), 8_000_000n],
-    ['FullStopERC1155Factory', erc1155Factory, deployData('FullStopERC1155Factory', [registry]), 8_000_000n],
+    ['LidexAssetRegistry', registry, deployData('LidexAssetRegistry', [[erc20Factory, erc721Factory, erc1155Factory]]), 12_000_000n],
+    ['LidexERC20Factory', erc20Factory, deployData('LidexERC20Factory', [registry]), 8_000_000n],
+    ['LidexERC721Factory', erc721Factory, deployData('LidexERC721Factory', [registry]), 8_000_000n],
+    ['LidexERC1155Factory', erc1155Factory, deployData('LidexERC1155Factory', [registry]), 8_000_000n],
   ];
 
   const runAsync = async () => {

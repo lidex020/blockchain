@@ -1,0 +1,224 @@
+// Wire-compatible ABCI 2.0 subset for CometBFT v0.39.4.
+// Field numbers and wire types are taken from:
+// https://github.com/cometbft/cometbft/blob/v0.39.4/proto/tendermint/abci/types.proto
+// Unused fields are intentionally omitted; unknown protobuf fields are ignored.
+syntax = "proto3";
+
+package tendermint.abci;
+
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+message Request {
+  oneof value {
+    RequestEcho echo = 1;
+    RequestFlush flush = 2;
+    RequestInfo info = 3;
+    RequestInitChain init_chain = 5;
+    RequestQuery query = 6;
+    RequestCheckTx check_tx = 8;
+    RequestCommit commit = 11;
+    RequestListSnapshots list_snapshots = 12;
+    RequestOfferSnapshot offer_snapshot = 13;
+    RequestLoadSnapshotChunk load_snapshot_chunk = 14;
+    RequestApplySnapshotChunk apply_snapshot_chunk = 15;
+    RequestPrepareProposal prepare_proposal = 16;
+    RequestProcessProposal process_proposal = 17;
+    RequestExtendVote extend_vote = 18;
+    RequestVerifyVoteExtension verify_vote_extension = 19;
+    RequestFinalizeBlock finalize_block = 20;
+    RequestInsertTx insert_tx = 21;
+    RequestReapTxs reap_txs = 22;
+  }
+}
+
+message RequestEcho { string message = 1; }
+message RequestFlush {}
+message RequestInfo {
+  string version = 1;
+  uint64 block_version = 2;
+  uint64 p2p_version = 3;
+  string abci_version = 4;
+}
+message RequestInitChain {
+  Timestamp time = 1;
+  string chain_id = 2;
+  repeated ValidatorUpdate validators = 4;
+  bytes app_state_bytes = 5;
+  int64 initial_height = 6;
+}
+message RequestQuery {
+  bytes data = 1;
+  string path = 2;
+  int64 height = 3;
+  bool prove = 4;
+}
+enum CheckTxType { NEW = 0; RECHECK = 1; }
+message RequestCheckTx { bytes tx = 1; CheckTxType type = 2; }
+message RequestCommit {}
+message RequestListSnapshots {}
+message RequestOfferSnapshot { Snapshot snapshot = 1; bytes app_hash = 2; }
+message RequestLoadSnapshotChunk { uint64 height = 1; uint32 format = 2; uint32 chunk = 3; }
+message RequestApplySnapshotChunk { uint32 index = 1; bytes chunk = 2; string sender = 3; }
+message RequestPrepareProposal {
+  int64 max_tx_bytes = 1;
+  repeated bytes txs = 2;
+  repeated Misbehavior misbehavior = 4;
+  int64 height = 5;
+  Timestamp time = 6;
+  bytes next_validators_hash = 7;
+  bytes proposer_address = 8;
+}
+message RequestProcessProposal {
+  repeated bytes txs = 1;
+  CommitInfo proposed_last_commit = 2;
+  repeated Misbehavior misbehavior = 3;
+  bytes hash = 4;
+  int64 height = 5;
+  Timestamp time = 6;
+  bytes next_validators_hash = 7;
+  bytes proposer_address = 8;
+}
+message RequestExtendVote {
+  bytes hash = 1;
+  int64 height = 2;
+  Timestamp time = 3;
+  repeated bytes txs = 4;
+  CommitInfo proposed_last_commit = 5;
+  repeated Misbehavior misbehavior = 6;
+  bytes next_validators_hash = 7;
+  bytes proposer_address = 8;
+}
+message RequestVerifyVoteExtension {
+  bytes hash = 1;
+  bytes validator_address = 2;
+  int64 height = 3;
+  bytes vote_extension = 4;
+}
+message RequestFinalizeBlock {
+  repeated bytes txs = 1;
+  CommitInfo decided_last_commit = 2;
+  repeated Misbehavior misbehavior = 3;
+  bytes hash = 4;
+  int64 height = 5;
+  Timestamp time = 6;
+  bytes next_validators_hash = 7;
+  bytes proposer_address = 8;
+}
+message RequestInsertTx { bytes tx = 1; }
+message RequestReapTxs { uint64 max_bytes = 1; uint64 max_gas = 2; }
+
+message Response {
+  oneof value {
+    ResponseException exception = 1;
+    ResponseEcho echo = 2;
+    ResponseFlush flush = 3;
+    ResponseInfo info = 4;
+    ResponseInitChain init_chain = 6;
+    ResponseQuery query = 7;
+    ResponseCheckTx check_tx = 9;
+    ResponseCommit commit = 12;
+    ResponseListSnapshots list_snapshots = 13;
+    ResponseOfferSnapshot offer_snapshot = 14;
+    ResponseLoadSnapshotChunk load_snapshot_chunk = 15;
+    ResponseApplySnapshotChunk apply_snapshot_chunk = 16;
+    ResponsePrepareProposal prepare_proposal = 17;
+    ResponseProcessProposal process_proposal = 18;
+    ResponseExtendVote extend_vote = 19;
+    ResponseVerifyVoteExtension verify_vote_extension = 20;
+    ResponseFinalizeBlock finalize_block = 21;
+    ResponseInsertTx insert_tx = 22;
+    ResponseReapTxs reap_txs = 23;
+  }
+}
+
+message ResponseException { string error = 1; }
+message ResponseEcho { string message = 1; }
+message ResponseFlush {}
+message ResponseInfo {
+  string data = 1;
+  string version = 2;
+  uint64 app_version = 3;
+  int64 last_block_height = 4;
+  bytes last_block_app_hash = 5;
+}
+message ResponseInitChain {
+  repeated ValidatorUpdate validators = 2;
+  bytes app_hash = 3;
+}
+message ResponseQuery {
+  uint32 code = 1;
+  string log = 3;
+  string info = 4;
+  int64 index = 5;
+  bytes key = 6;
+  bytes value = 7;
+  int64 height = 9;
+  string codespace = 10;
+}
+message ResponseCheckTx {
+  uint32 code = 1;
+  bytes data = 2;
+  string log = 3;
+  string info = 4;
+  int64 gas_wanted = 5;
+  int64 gas_used = 6;
+  repeated Event events = 7;
+  string codespace = 8;
+}
+message ResponseCommit { int64 retain_height = 3; }
+message ResponseListSnapshots { repeated Snapshot snapshots = 1; }
+message ResponseOfferSnapshot { enum Result { UNKNOWN = 0; ACCEPT = 1; ABORT = 2; REJECT = 3; REJECT_FORMAT = 4; REJECT_SENDER = 5; } Result result = 1; }
+message ResponseLoadSnapshotChunk { bytes chunk = 1; }
+message ResponseApplySnapshotChunk {
+  enum Result { UNKNOWN = 0; ACCEPT = 1; ABORT = 2; RETRY = 3; RETRY_SNAPSHOT = 4; REJECT_SNAPSHOT = 5; }
+  Result result = 1;
+  repeated uint32 refetch_chunks = 2;
+  repeated string reject_senders = 3;
+}
+message ResponsePrepareProposal { repeated bytes txs = 1; }
+message ResponseProcessProposal { enum ProposalStatus { UNKNOWN = 0; ACCEPT = 1; REJECT = 2; } ProposalStatus status = 1; }
+message ResponseExtendVote { bytes vote_extension = 1; }
+message ResponseVerifyVoteExtension { enum VerifyStatus { UNKNOWN = 0; ACCEPT = 1; REJECT = 2; } VerifyStatus status = 1; }
+message ResponseFinalizeBlock {
+  repeated Event events = 1;
+  repeated ExecTxResult tx_results = 2;
+  repeated ValidatorUpdate validator_updates = 3;
+  bytes app_hash = 5;
+}
+message ResponseInsertTx { uint32 code = 1; }
+message ResponseReapTxs { repeated bytes txs = 1; }
+
+message CommitInfo { int32 round = 1; repeated VoteInfo votes = 2; }
+message VoteInfo { Validator validator = 1; int32 block_id_flag = 3; }
+message Validator { bytes address = 1; PublicKey pub_key = 2; int64 voting_power = 3; int64 proposer_priority = 4; }
+message ValidatorUpdate { PublicKey pub_key = 1; int64 power = 2; }
+message Misbehavior {
+  int32 type = 1;
+  Validator validator = 2;
+  int64 height = 3;
+  Timestamp time = 4;
+  int64 total_voting_power = 5;
+}
+message PublicKey {
+  oneof sum {
+    bytes ed25519 = 1;
+    bytes secp256k1 = 2;
+    bytes bls12381 = 3;
+  }
+}
+message Event { string type = 1; repeated EventAttribute attributes = 2; }
+message EventAttribute { string key = 1; string value = 2; bool index = 3; }
+message ExecTxResult {
+  uint32 code = 1;
+  bytes data = 2;
+  string log = 3;
+  string info = 4;
+  int64 gas_wanted = 5;
+  int64 gas_used = 6;
+  repeated Event events = 7;
+  string codespace = 8;
+}
+message Snapshot { uint64 height = 1; uint32 format = 2; uint32 chunks = 3; bytes hash = 4; bytes metadata = 5; }

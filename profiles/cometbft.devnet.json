@@ -1,0 +1,8 @@
+{
+  "schema": "lidex-abci-profile-v1",
+  "network": "devnet",
+  "genesis": "../data/testnet/genesis.json",
+  "validatorMap": "cometbft.devnet.validators.json",
+  "datadir": "../data/testnet/comet-abci-data",
+  "listen": "tcp://127.0.0.1:26658"
+}

@@ -2,16 +2,16 @@
 pragma solidity ^0.8.25;
 
 import "./LDXERC20.sol";
-import "./FullStopAssetRegistry.sol";
+import "./LidexAssetRegistry.sol";
 
 /**
- * @title FullStopERC20Factory
+ * @title LidexERC20Factory
  * @notice Deploys an LDXERC20 token and registers it with the chain's asset
  * registry in one transaction. The factory holds no funds, has no admin
  * control over the tokens it creates, and cannot mint, freeze or upgrade them:
  * every privileged switch is chosen by the creator and recorded at deployment.
  */
-contract FullStopERC20Factory {
+contract LidexERC20Factory {
     struct TokenParams {
         string name;
         string symbol;
@@ -24,13 +24,13 @@ contract FullStopERC20Factory {
         address supplyRecipient;
     }
 
-    FullStopAssetRegistry public immutable registry;
+    LidexAssetRegistry public immutable registry;
     address public owner;
 
     event TokenCreated(address indexed asset, address indexed creator, string name, string symbol, uint256 initialSupply, uint256 maxSupply);
 
     constructor(address registry_) {
-        registry = FullStopAssetRegistry(registry_);
+        registry = LidexAssetRegistry(registry_);
         owner = msg.sender;
     }
 
@@ -49,7 +49,7 @@ contract FullStopERC20Factory {
                 p.supplyRecipient
             )
         );
-        registry.register(asset, FullStopAssetRegistry.Kind.ERC20, msg.sender, p.name, p.symbol);
+        registry.register(asset, LidexAssetRegistry.Kind.ERC20, msg.sender, p.name, p.symbol);
         emit TokenCreated(asset, msg.sender, p.name, p.symbol, p.initialSupply, p.maxSupply);
     }
 

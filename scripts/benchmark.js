@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Full Stop load benchmark.
+ * Lidex load benchmark.
  *
  * Every number in docs/BENCHMARKS.md is produced by this file. It starts a real
  * devnet (N validator processes + one non-validating RPC node), drives
@@ -43,7 +43,7 @@ const num = (name, fallback) => Number(arg(name, fallback));
 if (arg('help', false)) {
   process.stdout.write(
     [
-      'Full Stop benchmark',
+      'Lidex benchmark',
       '',
       '  --validators <n>        validator nodes to start        (default 4)',
       '  --block-time <ms>       target block interval           (default 1500)',
@@ -316,7 +316,7 @@ function renderReport({ env, cfg, summary, blocks, supply, audit, sync, rejectio
     ['Transactions per block', `mean ${fmt(blocks.perBlock.mean, 1)}, max ${fmt(blocks.perBlock.max, 0)}`, 'length of the transactions array per block'],
     ['Blocks produced', `${fmt(summary.blocksProduced, 0)} over ${fmt(summary.windowMs / 1000, 1)} s`, 'heights observed inside the measured window'],
     ['Latency to inclusion', `p50 ${fmt(latency.p50, 0)} ms, p95 ${fmt(latency.p95, 0)} ms, p99 ${fmt(latency.p99, 0)} ms, max ${fmt(latency.max, 0)} ms`, 'submit -> first readable receipt, polled every 50 ms'],
-    ['Finality', '1 block', 'a Full Stop block carries the precommits that sealed it, so a transaction is final in the block that includes it; there is no epoch to wait for'],
+    ['Finality', '1 block', 'a Lidex block carries the precommits that sealed it, so a transaction is final in the block that includes it; there is no epoch to wait for'],
     ['Consensus rounds', `p50 ${fmt(blocks.rounds.p50, 0)}, max ${fmt(blocks.rounds.max, 0)}, ${fmt(blocks.round0Pct, 1)}% of blocks committed at round 0`, 'header.round per block; round > 0 means a view change happened'],
     ['Cold node sync + replay', sync?.error ? `failed: ${sync.error}` : sync ? `${fmt(sync.height, 0)} blocks in ${fmt(sync.ms / 1000, 1)} s = ${fmt(sync.rate, 1)} blocks/s` : 'not measured', 'an empty data directory, one peer, re-executed every block from genesis (the state trie is not persisted)'],
     ['Sync agreement', sync?.error ? 'n/a' : sync ? (sync.agrees ? `identical state root and app hash at height ${sync.comparedAtHeight}` : 'DIVERGED - the synced node does not reproduce the network') : 'not measured', 'both nodes asked for the same height and their headers compared: heads are not comparable while the chain advances'],

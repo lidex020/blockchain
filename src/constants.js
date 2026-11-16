@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Full Stop Blockchain - protocol constants.
+ * Lidex Blockchain - protocol constants.
  *
  * These values are the single source of truth for the consensus-critical
  * parameters of the network. Anything that validators must agree on lives
@@ -10,7 +10,7 @@
  */
 
 const CHAIN = {
-  name: 'fullstop',
+  name: 'lidex',
   displayName: 'Lidex Blockchain',
   /** EIP-155 chain id (decimal). Mainnet candidate. */
   chainId: 72122n,
@@ -218,7 +218,7 @@ const PROTOCOL = {
 
 const VERSION = {
   protocol: '0.1.0',
-  software: 'fullstop-node/0.1.0',
+  software: 'lidex-node/0.1.0',
   /** Application hash / state machine version, bumped on breaking changes. */
   appVersion: '1',
 };

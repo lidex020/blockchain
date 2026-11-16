@@ -696,7 +696,7 @@ const rpc = async (method, params = []) => {
 };
 
 const UNIT = 10n ** 18n;
-const fmtFstop = (raw, digits = 4) => {
+const fmtLdx = (raw, digits = 4) => {
   if (raw === undefined || raw === null) return '—';
   const v = BigInt(raw);
   const whole = v / UNIT;
@@ -842,7 +842,7 @@ async function boot() {
     document.getElementById('landingChainId').textContent = App.net.chainId;
     document.getElementById('landingHeight').textContent = fmtNum(status.height);
     document.getElementById('landingFooterStatus').textContent =
-      `${fmtNum(status.validators)} validators · ${fmtFstop(supply.totalIssued, 0)} LDX issued`;
+      `${fmtNum(status.validators)} validators · ${fmtLdx(supply.totalIssued, 0)} LDX issued`;
     document.getElementById('netStatus').classList.add('live');
     document.getElementById('netStatus').textContent = `chain ${App.net.chainId} · live`;
     document.getElementById('connectBtn').onclick = connectWallet;
@@ -944,7 +944,7 @@ async function viewNetwork(view) {
     ${card('Height', fmtNum(status.height), `${fmtNum(status.txCount)} transactions in total`)}
     ${card('Block time', `${(status.consensus?.metrics ? Math.round(1000 / 1.5) : 0) || '1.5'}s`, 'target interval, ~1–2s design band')}
     ${card('Validators', fmtNum(status.validators), `${fmtNum(parseInt(peers, 16))} connected peers`)}
-    ${card('LDX issued', `${fmtFstop(supply.totalIssued, 0)}`, `${fmtFstop(supply.burned, 4)} burned`)}
+    ${card('LDX issued', `${fmtLdx(supply.totalIssued, 0)}`, `${fmtLdx(supply.burned, 4)} burned`)}
   </div>
 
   <div class="grid cols-2">
@@ -1031,7 +1031,7 @@ function txTable(txs, receipts) {
       <td><a href="#/blocks/${full && t.blockNumber ? BigInt(t.blockNumber) : '#'}">${full && t.blockNumber ? fmtNum(BigInt(t.blockNumber)) : 'Pending'}</a></td>
       <td>${full && t.from ? `<a class="hash" href="#/address/${t.from}">${esc(short(t.from, 6))}</a>` : '—'}</td>
       <td>${full && t.to ? `<a class="hash" href="#/address/${t.to}">${esc(short(t.to, 6))}</a>` : '<span class="pill dim">Contract creation</span>'}</td>
-      <td class="num">${full ? fmtFstop(t.value, 4) : '—'}</td>
+      <td class="num">${full ? fmtLdx(t.value, 4) : '—'}</td>
       <td class="num">${r ? fmtNum(BigInt(r.gasUsed)) : '—'}</td>
       <td>${r ? (r.status === '0x1' ? '<span class="pill good">success</span>' : '<span class="pill bad">reverted</span>') : '—'}</td>
     </tr>`;
@@ -1241,14 +1241,14 @@ async function viewSupply(view) {
   <p class="lede">Every number below is computed from protocol state: mint and burn events recorded by the supply ledger, cross-checked against a full walk of the state trie. ${audit.ok ? 'The conservation check passes.' : '<span class="pill bad">invariant violated</span>'}</p>
 
   <div class="grid cols-4">
-    ${card('Hard cap', fmtFstop(max, 0), 'fixed maximum supply, enforced by protocol rules')}
-    ${card('Total issued', fmtFstop(issued, 0), `${pct(issued)} of the cap`)}
-    ${card('Circulating', fmtFstop(circ, 0), 'issued minus protocol-held balances')}
-    ${card('Permanently burned', fmtFstop(burned, 6), 'removed from supply, not locked')}
+    ${card('Hard cap', fmtLdx(max, 0), 'fixed maximum supply, enforced by protocol rules')}
+    ${card('Total issued', fmtLdx(issued, 0), `${pct(issued)} of the cap`)}
+    ${card('Circulating', fmtLdx(circ, 0), 'issued minus protocol-held balances')}
+    ${card('Permanently burned', fmtLdx(burned, 6), 'removed from supply, not locked')}
   </div>
 
   <div class="card" style="margin-top:16px">
-    <div class="row between"><h3>Allocation and release</h3><span class="tiny muted">unissued: ${fmtFstop(supply.unissued, 0)} LDX</span></div>
+    <div class="row between"><h3>Allocation and release</h3><span class="tiny muted">unissued: ${fmtLdx(supply.unissued, 0)} LDX</span></div>
     <div class="stack">
       ${pools.map(([key, p]) => {
         const alloc = BigInt(p.allocation);
@@ -1257,7 +1257,7 @@ async function viewSupply(view) {
         return `<div>
           <div class="row between"><strong style="font-size:14px">${esc(p.label)}</strong><span class="tiny muted mono">${esc(p.mode)}</span></div>
           <div class="bar" style="margin:7px 0 5px"><span style="width:${(Number(done) / Number(max)) * 100}%"></span></div>
-          <div class="row between tiny muted"><span>${fmtFstop(done, 0)} issued · ${fmtFstop(rest, 0)} locked</span><span>${pct(alloc)} of cap</span></div>
+          <div class="row between tiny muted"><span>${fmtLdx(done, 0)} issued · ${fmtLdx(rest, 0)} locked</span><span>${pct(alloc)} of cap</span></div>
         </div>`;
       }).join('')}
     </div>
@@ -1265,24 +1265,24 @@ async function viewSupply(view) {
   </div>
 
   <div class="grid cols-3" style="margin-top:16px">
-    ${card('Validator rewards paid', fmtFstop(supply.totals.validatorRewards ?? 0, 4), 'from the block subsidy and fee share')}
-    ${card('Community rewards paid', fmtFstop(supply.totals.communityRewards ?? 0, 4), `${fmtNum(supply.communityRound?.claims ?? 0)} claims this round`)}
-    ${card('Fee revenue to date', fmtFstop(supply.totals.feeRevenue ?? 0, 8), `${fmtFstop(supply.totals.feesBurned ?? 0, 8)} of it burned`)}
+    ${card('Validator rewards paid', fmtLdx(supply.totals.validatorRewards ?? 0, 4), 'from the block subsidy and fee share')}
+    ${card('Community rewards paid', fmtLdx(supply.totals.communityRewards ?? 0, 4), `${fmtNum(supply.communityRound?.claims ?? 0)} claims this round`)}
+    ${card('Fee revenue to date', fmtLdx(supply.totals.feeRevenue ?? 0, 8), `${fmtLdx(supply.totals.feesBurned ?? 0, 8)} of it burned`)}
   </div>
 
   <div class="grid cols-2" style="margin-top:16px">
     <div class="card"><h3>Module balances</h3><dl class="kvs">
-      <dt>Validator reward pool</dt><dd class="num">${fmtFstop(rewards.validatorPool, 4)}</dd>
-      <dt>Community pool</dt><dd class="num">${fmtFstop(rewards.communityPool, 4)}</dd>
-      <dt>Vesting module</dt><dd class="num">${fmtFstop(rewards.vesting, 4)}</dd>
-      <dt>Fee collector</dt><dd class="num">${fmtFstop(rewards.feeCollector, 8)}</dd>
+      <dt>Validator reward pool</dt><dd class="num">${fmtLdx(rewards.validatorPool, 4)}</dd>
+      <dt>Community pool</dt><dd class="num">${fmtLdx(rewards.communityPool, 4)}</dd>
+      <dt>Vesting module</dt><dd class="num">${fmtLdx(rewards.vesting, 4)}</dd>
+      <dt>Fee collector</dt><dd class="num">${fmtLdx(rewards.feeCollector, 8)}</dd>
     </dl></div>
     <div class="card"><h3>Conservation audit</h3><dl class="kvs">
-      <dt>On-chain balance sum</dt><dd class="num">${fmtFstop(audit.onchainTotal, 0)}</dd>
-      <dt>Ledger minted − burned</dt><dd class="num">${fmtFstop(audit.ledgerTotal, 0)}</dd>
-      <dt>Difference</dt><dd class="num">${fmtFstop(audit.difference, 0)}</dd>
+      <dt>On-chain balance sum</dt><dd class="num">${fmtLdx(audit.onchainTotal, 0)}</dd>
+      <dt>Ledger minted − burned</dt><dd class="num">${fmtLdx(audit.ledgerTotal, 0)}</dd>
+      <dt>Difference</dt><dd class="num">${fmtLdx(audit.difference, 0)}</dd>
       <dt>Accounts in state</dt><dd class="num">${fmtNum(audit.accounts)}</dd>
-      <dt>Headroom to cap</dt><dd class="num">${fmtFstop(audit.headroom, 0)}</dd>
+      <dt>Headroom to cap</dt><dd class="num">${fmtLdx(audit.headroom, 0)}</dd>
     </dl>
     <p class="tiny muted" style="margin-top:10px">${audit.ok ? 'Sum of every balance equals what the ledger minted minus what it burned: no coin appeared or vanished outside a protocol rule.' : 'Mismatch: stop and investigate.'}</p></div>
   </div>`;
@@ -1300,7 +1300,7 @@ async function viewValidators(view) {
     <td><strong>${esc(v.moniker)}</strong></td>
     <td><a class="hash" href="#/address/${v.operator}">${esc(short(v.operator, 8))}</a></td>
     <td>${pill(v.status)}</td>
-    <td class="num">${fmtNum(v.power)}<span class="tiny muted"> · ${fmtFstop(v.totalStake, 0)} LDX</span></td>
+    <td class="num">${fmtNum(v.power)}<span class="tiny muted"> · ${fmtLdx(v.totalStake, 0)} LDX</span></td>
     <td class="num">${(Number(v.commissionBps) / 100).toFixed(1)}%</td>
     <td class="num">${v.delegators.length}</td>
     <td class="num">${fmtNum(v.missedBlocks)}${v.jailReason ? ` <span class="pill warn">${esc(v.jailReason)}</span>` : ''}</td>
@@ -1308,8 +1308,8 @@ async function viewValidators(view) {
   </tbody></table></div>
 
   <div class="grid cols-4" style="margin-top:16px">
-    ${card('Bonded total', fmtFstop(total, 0), 'self-bonds plus delegations')}
-    ${card('Minimum self-bond', fmtFstop(params.min_self_stake ?? params.minSelfStake, 0), 'to join the set')}
+    ${card('Bonded total', fmtLdx(total, 0), 'self-bonds plus delegations')}
+    ${card('Minimum self-bond', fmtLdx(params.min_self_stake ?? params.minSelfStake, 0), 'to join the set')}
     ${card('Unbonding', fmtNum(params.unbonding_blocks ?? params.unbondingBlocks) + ' blocks', 'before a withdrawal is paid')}
     ${card('Active set cap', fmtNum(params.max_active_validators ?? params.maxActiveValidators), 'highest-stake validators')}
   </div>
@@ -1325,12 +1325,12 @@ async function viewValidators(view) {
     </div>
     <div class="card"><h3>Escrow coverage</h3>
       <dl class="kvs">
-        <dt>Escrow holds</dt><dd class="num">${fmtFstop(params.escrowBalance, 0)}</dd>
-        <dt>Entitlements total</dt><dd class="num">${fmtFstop(params.escrowRequired, 0)}</dd>
+        <dt>Escrow holds</dt><dd class="num">${fmtLdx(params.escrowBalance, 0)}</dd>
+        <dt>Entitlements total</dt><dd class="num">${fmtLdx(params.escrowRequired, 0)}</dd>
         <dt>Unbonding queue</dt><dd class="num">${fmtNum(vals.length && status.validators)}</dd>
       </dl>
       <h3 style="margin-top:16px">Evidence</h3>
-      ${evidence.length ? `<table class="list-tight"><tbody>${evidence.slice(0, 6).map((e) => `<tr><td>${pill(e.type === 'double-sign' ? 'tombstoned' : e.type, e.type === 'double-sign' ? 'bad' : 'warn')}</td><td class="hash">${esc(short(e.operator ?? e.validator ?? '—', 8))}</td><td class="tiny muted">height ${fmtNum(e.height)}</td><td class="num tiny">${fmtFstop(e.amount ?? e.slashed ?? 0, 2)}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No slashing evidence has been committed.</p>'}
+      ${evidence.length ? `<table class="list-tight"><tbody>${evidence.slice(0, 6).map((e) => `<tr><td>${pill(e.type === 'double-sign' ? 'tombstoned' : e.type, e.type === 'double-sign' ? 'bad' : 'warn')}</td><td class="hash">${esc(short(e.operator ?? e.validator ?? '—', 8))}</td><td class="tiny muted">height ${fmtNum(e.height)}</td><td class="num tiny">${fmtLdx(e.amount ?? e.slashed ?? 0, 2)}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No slashing evidence has been committed.</p>'}
     </div>
   </div>`;
   document.getElementById('dBtn').onclick = async () => {
@@ -1471,7 +1471,7 @@ async function viewCreate(view) {
       const check = (id) => !!document.getElementById(id)?.checked;
       let to, data;
       if (kind === 'erc20') {
-        const abi = await abiFor('FullStopERC20Factory');
+        const abi = await abiFor('LidexERC20Factory');
         const iface = new ethers.Interface(abi);
         to = App.net.contracts.erc20_factory;
         data = iface.encodeFunctionData('createToken', [{
@@ -1482,11 +1482,11 @@ async function viewCreate(view) {
           supplyRecipient: val('f_recipient') || (await s.getAddress()),
         }]);
       } else if (kind === 'erc721') {
-        const iface = new ethers.Interface(await abiFor('FullStopERC721Factory'));
+        const iface = new ethers.Interface(await abiFor('LidexERC721Factory'));
         to = App.net.contracts.erc721_factory;
         data = iface.encodeFunctionData('createCollection', [{ name: val('f_name'), symbol: val('f_symbol'), maxSupply: BigInt(val('f_max') || 0), contractURI: val('f_uri') }]);
       } else {
-        const iface = new ethers.Interface(await abiFor('FullStopERC1155Factory'));
+        const iface = new ethers.Interface(await abiFor('LidexERC1155Factory'));
         to = App.net.contracts.erc1155_factory;
         data = iface.encodeFunctionData('createCollection', [val('f_name'), val('f_uri')]);
       }
@@ -1516,7 +1516,7 @@ async function viewAccount(view) {
   ]);
   view.innerHTML = `<div class="eyebrow">Wallet</div><h1>Your account</h1>
     <div class="grid cols-4">
-      ${card('Balance', fmtFstop(bal, 4), 'LDX')}
+      ${card('Balance', fmtLdx(bal, 4), 'LDX')}
       ${card('Nonce', fmtNum(nonce), 'next transaction number')}
       ${card('Type', code === '0x' ? 'externally owned' : 'contract', 'only an EOA can sign')}
       ${card('Network', esc(String(App.net.chainId)), 'chain id this page is talking to')}
@@ -1534,7 +1534,7 @@ async function viewAccount(view) {
     </div>
     <div class="card" style="margin-top:16px"><h3>Testnet faucet</h3>
       <p class="tiny muted">The faucet signs an ordinary transfer from its own funded account — it cannot mint. Claims are limited per address and per window.</p>
-      <div class="row" style="margin-top:10px"><button class="btn ghost" id="f_btn">Request ${fmtFstop(App.net.faucet?.amount ?? 25n * UNIT, 0)} LDX</button></div>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="f_btn">Request ${fmtLdx(App.net.faucet?.amount ?? 25n * UNIT, 0)} LDX</button></div>
     </div>`;
   document.getElementById('copyAddr').onclick = () => copy(addr0);
   document.getElementById('s_btn').onclick = async () => {
@@ -1551,7 +1551,7 @@ async function viewAccount(view) {
   document.getElementById('f_btn').onclick = async () => {
     try {
       const r = await rpc('fs_faucet', [App.accounts[0]]);
-      toast('Faucet queued ' + fmtFstop(r.amount, 0) + ' LDX · ' + short(r.hash, 6), 'good');
+      toast('Faucet queued ' + fmtLdx(r.amount, 0) + ' LDX · ' + short(r.hash, 6), 'good');
     } catch (err) { toast(esc(err.message), 'bad'); }
   };
   wireCopyables(view);
@@ -1568,7 +1568,7 @@ async function viewAddress(view, address, pageArg = '0') {
     <h1 class="mono" style="font-size:20px;word-break:break-all">${esc(address)}</h1></div>
     ${asset ? `<a class="btn ghost" href="#/token/${address}">View registered token →</a>` : ''}</div>
     <div class="scan-overview">
-      ${card('Balance', fmtFstop(acct.balance, 4), acct.ticker ?? 'LDX')}
+      ${card('Balance', fmtLdx(acct.balance, 4), acct.ticker ?? 'LDX')}
       ${card('Nonce', fmtNum(acct.nonce), 'transactions sent by this address')}
       ${card('Kind', acct.isContract ? 'contract' : 'externally owned', 'code ' + (acct.isContract ? 'present' : 'absent'))}
       ${card('Code hash', esc(short(acct.codeHash, 6)), 'keccak of the deployed bytecode')}
@@ -1594,7 +1594,7 @@ function addressHistoryTable(transactions, address) {
         <td><a href="#/blocks/${tx.blockNumber}">${fmtNum(tx.blockNumber)}</a></td>
         <td>${direction === 'IN' ? '<span class="pill good">IN</span>' : `<span class="pill dim">${direction}</span>`}</td>
         <td>${counterparty ? `<a class="hash" href="#/address/${counterparty}">${esc(short(counterparty, 8))}</a>` : '<span class="pill dim">Contract creation</span>'}</td>
-        <td class="num">${fmtFstop(tx.value, 4)} LDX</td>
+        <td class="num">${fmtLdx(tx.value, 4)} LDX</td>
         <td>${tx.status === '0x1' ? '<span class="pill good">Success</span>' : '<span class="pill bad">Failed</span>'}</td>
       </tr>`;
     }).join('')}
@@ -1611,7 +1611,7 @@ async function viewTx(view, hash) {
     <div class="card"><h3>Transaction</h3><dl class="kvs">
       <dt>From</dt><dd><a class="hash" href="#/address/${tx.from}">${esc(short(tx.from, 10))}</a></dd>
       <dt>To</dt><dd>${tx.to ? `<a class="hash" href="#/address/${tx.to}">${esc(short(tx.to, 10))}</a>` : '<span class="pill dim">contract creation</span>'}</dd>
-      <dt>Value</dt><dd class="num">${fmtFstop(tx.value, 6)} LDX</dd>
+      <dt>Value</dt><dd class="num">${fmtLdx(tx.value, 6)} LDX</dd>
       <dt>Nonce</dt><dd class="num">${fmtNum(tx.nonce)}</dd>
       <dt>Gas limit</dt><dd class="num">${fmtNum(BigInt(tx.gas))}</dd>
       <dt>Gas price</dt><dd class="num">${fmtNum(BigInt(tx.gasPrice ?? tx.maxFeePerGas ?? 0))} wei</dd>
@@ -1625,7 +1625,7 @@ async function viewTx(view, hash) {
         <dt>Block</dt><dd><a class="hash" href="#/blocks/${parseInt(rc.blockNumber, 16)}">${fmtNum(BigInt(rc.blockNumber))}</a></dd>
         <dt>Gas used</dt><dd class="num">${fmtNum(BigInt(rc.gasUsed))}</dd>
         <dt>Effective price</dt><dd class="num">${fmtNum(BigInt(rc.effectiveGasPrice))} wei</dd>
-        <dt>Fee paid</dt><dd class="num">${fmtFstop(BigInt(rc.gasUsed) * BigInt(rc.effectiveGasPrice), 8)} LDX</dd>
+        <dt>Fee paid</dt><dd class="num">${fmtLdx(BigInt(rc.gasUsed) * BigInt(rc.effectiveGasPrice), 8)} LDX</dd>
         <dt>Contract</dt><dd>${rc.contractAddress ? `<a class="hash" href="#/address/${rc.contractAddress}">${esc(short(rc.contractAddress, 10))}</a>` : '—'}</dd>
         <dt>Logs</dt><dd class="num">${rc.logs.length}</dd>
       </dl>${rc.logs.length ? `<h3 style="margin-top:16px">Events</h3>${rc.logs.map((l) => `<div class="card" style="margin-bottom:8px"><div class="tiny muted">address <span class="mono">${esc(short(l.address, 8))}</span> · topic0 <span class="mono">${esc(short(l.topics?.[0], 10))}</span></div><div class="mono tiny" style="margin-top:6px;word-break:break-all">${esc(l.data)}</div></div>`).join('')}` : ''}`

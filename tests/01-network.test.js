@@ -8,7 +8,7 @@ const os = require('os');
 const path = require('path');
 const { ethers } = require('ethers');
 const { Suite, TestNetwork, assert, assertEqual, waitFor, toBase, UNIT, constants } = require('./helpers.js');
-const { FullStopBlock, MessageType, ZERO_HASH, makeVote, verifyVote } = require('../src/block.js');
+const { LidexBlock, MessageType, ZERO_HASH, makeVote, verifyVote } = require('../src/block.js');
 const { Chain } = require('../src/chain.js');
 const { loadGenesis, toExecutionGenesis } = require('../src/genesis.js');
 const { paramsFromGenesis, readValidatorKey } = require('./helpers.js');
@@ -117,7 +117,7 @@ async function run(suite) {
       // hand the missing blocks over directly, exactly as block sync does
       for (let h = late.chain.head.height + 1; h <= net.nodes[0].chain.head.height; h++) {
         const rec = net.nodes[0].chain.blocks.get(h).toJSON();
-        await late.chain.commitBlock(FullStopBlock.fromJSON(rec), { source: 'sync' });
+        await late.chain.commitBlock(LidexBlock.fromJSON(rec), { source: 'sync' });
       }
       assert(late.chain.head.height === net.nodes[0].chain.head.height, `${late.name} did not catch up (${late.chain.head.height} vs ${net.nodes[0].chain.head.height})`);
       assertEqual(late.chain.appHash, net.nodes[0].chain.appHash, 'app hash after sync');
@@ -155,13 +155,13 @@ async function run(suite) {
         time: chain.head.header.time + chain.params.minBlockIntervalMs + 50,
         proposer: chain.head.header.proposer,
       });
-      const tamperedRoot = new FullStopBlock({
+      const tamperedRoot = new LidexBlock({
         header: { ...block.header, stateRoot: '0x' + '11'.repeat(32) },
         txs: block.txs,
         evidence: block.evidence,
         lastCommit: block.lastCommit,
       });
-      const tamperedApp = new FullStopBlock({
+      const tamperedApp = new LidexBlock({
         header: { ...block.header, appHash: '0x' + '22'.repeat(32) },
         txs: block.txs,
         evidence: block.evidence,
@@ -178,7 +178,7 @@ async function run(suite) {
         assert(/app hash/.test(v2.reason), `unexpected rejection reason: ${v2.reason}`);
       }
       if (extraTx) {
-        const inflated = new FullStopBlock({ header: block.header, txs: [...block.txs, extraTx], evidence: block.evidence, lastCommit: block.lastCommit });
+        const inflated = new LidexBlock({ header: block.header, txs: [...block.txs, extraTx], evidence: block.evidence, lastCommit: block.lastCommit });
         const v3 = await net.nodes[1].chain.validateBlock(inflated, { checkCommit: false });
         assert(!v3.ok, 'a block whose transaction list does not match its data root was accepted');
         assert(/data hash/i.test(v3.reason), `unexpected reason: ${v3.reason}`);
@@ -193,7 +193,7 @@ async function run(suite) {
       const height = chain.head.height + 1;
       assert(height > 1, 'test needs at least one committed block');
       const { block } = await chain.produceBlock({ height, round: 0, time: chain.head.header.time + 2000, proposer: chain.head.header.proposer });
-      const rebuilt = new FullStopBlock({ header: block.header, txs: block.txs, evidence: block.evidence, lastCommit: null });
+      const rebuilt = new LidexBlock({ header: block.header, txs: block.txs, evidence: block.evidence, lastCommit: null });
       const verdict = await net.nodes[1].chain.validateBlock(rebuilt, { checkCommit: true });
       assert(!verdict.ok, 'an uncommitted block was accepted');
       assert(/commit/i.test(verdict.reason), `unexpected reason: ${verdict.reason}`);
@@ -213,10 +213,97 @@ async function run(suite) {
       });
       assert(verifyVote(vote, chain.chainId), 'self-consistent signature should verify');
       const verdict = chain._checkLastCommit(
-        { height: chain.head.height + 1, hash: chain.head.hash, lastCommit: { height: chain.head.height, round: 0, blockHash: chain.head.hash, votes: [vote] } },
+        {
+          height: chain.head.height + 1,
+          header: { parentHash: chain.head.hash },
+          lastCommit: { height: chain.head.height, round: chain.head.header.round, blockHash: chain.head.hash, votes: [vote] },
+        },
         chain.currentCommitSet()
       );
       assert(!verdict.ok, 'a commit of non-validator votes was accepted');
+    });
+
+    await suite.test('attendance uses only the verified canonical parent commit', async () => {
+      const chain = net.nodes[1].chain;
+      const parent = chain.head;
+      const canonical = chain.commits.get(parent.height);
+      assert(canonical?.votes?.length, 'the current parent has no recorded canonical commit');
+
+      const set = chain.currentCommitSet();
+      const totalPower = set.reduce((sum, validator) => sum + validator.power, 0n);
+      const quorum = (totalPower * 2n) / 3n + 1n;
+      const canonicalOperators = new Set(
+        canonical.votes
+          .map((vote) =>
+            set.find(
+              (validator) =>
+                validator.operator.toLowerCase() === vote.validator.toLowerCase() ||
+                validator.consensusAddress.toLowerCase() === vote.validator.toLowerCase()
+            )?.operator.toLowerCase()
+          )
+          .filter(Boolean)
+      );
+
+      // Use all active validators unless the canonical commit already contains
+      // all of them. In that case, find a different quorum by omitting one.
+      let selected = set;
+      if (set.every((validator) => canonicalOperators.has(validator.operator.toLowerCase()))) {
+        selected = set.find((omitted) => {
+          const candidate = set.filter((validator) => validator !== omitted);
+          const power = candidate.reduce((sum, validator) => sum + validator.power, 0n);
+          return power >= quorum && candidate.some((validator) => !canonicalOperators.has(validator.operator.toLowerCase()));
+        });
+        assert(selected, 'the test validator set has no alternate quorum');
+        selected = set.filter((validator) => validator !== selected);
+      }
+
+      let power = 0n;
+      const votes = [];
+      for (const [index, validator] of selected.entries()) {
+        const node = net.nodes.find(
+          (candidate) =>
+            candidate.key.address.toLowerCase() === validator.operator.toLowerCase() ||
+            candidate.key.consensusAddress.toLowerCase() === validator.consensusAddress.toLowerCase()
+        );
+        assert(node, `no existing testnet key found for validator ${validator.operator}`);
+        const key = {
+          address: node.key.consensusAddress ?? node.key.address,
+          privateKey: node.key.consensusPrivateKey ?? node.key.privateKey,
+        };
+        votes.push(
+          makeVote({
+            validatorKey: key,
+            type: MessageType.Precommit,
+            chainId: chain.chainId,
+            height: parent.height,
+            round: canonical.round,
+            blockHash: `0x${'99'.repeat(32)}`,
+            timestamp: Date.now() + 10_000 + index,
+          })
+        );
+        power += validator.power;
+      }
+      assert(power >= quorum, 'the alternate commit does not have quorum power');
+      const supplied = { height: parent.height, round: canonical.round, blockHash: `0x${'99'.repeat(32)}`, votes };
+      assert(votes.every((vote) => verifyVote(vote, chain.chainId)), 'the supplied votes must have valid signatures');
+      assert(!chain.validateCommit(supplied, parent, set).ok, 'votes for a different block must not verify as the parent commit');
+
+      const { block } = await chain.produceBlock({
+        height: parent.height + 1,
+        round: 0,
+        time: Math.max(Date.now(), parent.header.time + chain.params.minBlockIntervalMs),
+        proposer: parent.header.proposer,
+      });
+      const replaced = new LidexBlock({
+        header: block.header,
+        txs: block.txs,
+        evidence: block.evidence,
+        lastCommit: supplied,
+      });
+      assert(chain._checkLastCommit(block, set).ok, 'the genuine canonical parent commit was not accepted');
+      const verdict = await chain.validateBlock(replaced);
+      assert(!verdict.ok, 'signed votes for a different block were accepted as the canonical parent commit');
+      assert(/canonical parent commit/i.test(verdict.reason), `unexpected rejection reason: ${verdict.reason}`);
     });
 
     await suite.test('a block that changes the validator set is accepted by every peer', async () => {
@@ -267,7 +354,7 @@ async function run(suite) {
       assert(proposal, 'a valid next-height block could not be produced for the negative control');
       const forgedJson = { ...proposal.toJSON(), header: { ...proposal.header } };
       forgedJson.header.validatorsHash = `0x${'11'.repeat(32)}`;
-      const verdict = await net.nodes[1].chain.validateBlock(FullStopBlock.fromJSON(forgedJson), { checkCommit: false });
+      const verdict = await net.nodes[1].chain.validateBlock(LidexBlock.fromJSON(forgedJson), { checkCommit: false });
       assert(!verdict.ok, 'a block claiming a validator set it did not execute was accepted');
       assert(/validator set hash/i.test(verdict.reason), `rejected for the wrong reason: ${verdict.reason}`);
     });

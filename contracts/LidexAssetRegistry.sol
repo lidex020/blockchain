@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 /**
- * @title FullStopAssetRegistry
+ * @title LidexAssetRegistry
  * @notice On-chain index of digital assets created through the official Full
  * Stop asset-creation factories.
  *
@@ -14,7 +14,7 @@ pragma solidity ^0.8.25;
  * exchange listing. Users who deploy a contract directly are not in this list
  * and are not second-class: the registry is a convenience index only.
  */
-contract FullStopAssetRegistry {
+contract LidexAssetRegistry {
     enum Kind {
         None,
         ERC20,

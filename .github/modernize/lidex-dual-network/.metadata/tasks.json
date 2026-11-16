@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Bounded implementation tasks for isolated LIDEX testnet preparation and a fail-closed dual-network site experience.",
+  "tasks": [
+    {
+      "type": "transform",
+      "id": "001-isolate-testnet-network-and-state",
+      "description": "Establish isolated testnet network identity and chain state",
+      "reason": "The assessment found shared/single-network assumptions and destructive devnet reset behavior that can threaten existing chain state.",
+      "requirements": "Implement explicit testnet configuration and isolated chain-state/genesis storage boundaries. Reserve a separate mainnet namespace only as inert configuration structure if needed; do not create mainnet genesis files or allocations, validator keys, credentials, or an active mainnet profile. Preserve existing chain state, key material, branding, and unrelated worktree changes. Retain the current mainnet startup rejection. Validate using temporary test directories only and prove testnet state cannot read or overwrite another network's state.",
+      "dependencies": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-add-network-selector-and-mainnet-transaction-gate",
+      "description": "Add the permanent site network selector and transaction safeguards",
+      "reason": "The assessment found a single browser network configuration and no mainnet transaction confirmation.",
+      "requirements": "Add a persistent network selector driven by deployment-appropriate public network configuration, with clear display of the selected network and wallet-chain mismatch handling. Include an explicit confirmation step before any future mainnet transaction can be submitted, but keep mainnet selection and transaction submission blocked/non-operational until separate human readiness approval. Never treat a confirmation dialog as authorization to start or deploy mainnet. Test testnet selection and verify the mainnet path fails closed.",
+      "dependencies": [
+        "001-isolate-testnet-network-and-state"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-test-network-boundaries-and-site-behavior",
+      "description": "Add automated verification for network separation and site behavior",
+      "reason": "The assessment identified network-selection, state-isolation, and mainnet-confirmation gaps that need explicit regression coverage.",
+      "requirements": "Add focused automated tests for distinct network identifiers/configuration, isolated storage and genesis paths, preservation of existing data, the existing mainnet startup guard, testnet site selection, wallet-network mismatch, and fail-closed mainnet transaction behavior. Use temporary directories and non-secret fixtures; do not generate or use validator keys or credentials. Do not run destructive reset against project data or test unrelated behavior.",
+      "dependencies": [
+        "001-isolate-testnet-network-and-state",
+        "002-add-network-selector-and-mainnet-transaction-gate"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-document-testnet-operations-and-mainnet-blockers",
+      "description": "Document testnet operations and the mainnet readiness blockers",
+      "reason": "The assessment found no container operations baseline and a consensus-safety issue that prevents a production readiness claim.",
+      "requirements": "Document testnet configuration, startup/shutdown, health checks, backup/restore, monitoring, upgrade/rollback, and incident procedures without embedding secrets. Include a mainnet readiness checklist that explicitly records the FSC lock/lock-round safety gap and possible round-boundary fork, and requires independent consensus/security review plus human signoff. Checklist completion must not start or deploy mainnet, create genesis allocations or keys, or remove the current startup guard.",
+      "dependencies": [
+        "003-test-network-boundaries-and-site-behavior"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "005-harden-testnet-rpc-and-configuration",
+      "description": "Harden testnet RPC exposure and operational configuration",
+      "reason": "The assessment found permissive CORS, a 0.0.0.0 listener, and plaintext test-key generation in devnet scripts.",
+      "requirements": "Constrain RPC CORS to explicitly configured testnet origins, make listener exposure explicit and safe by default, and ensure secrets are supplied out of band rather than committed, logged, or generated by the plan. Review the devnet reset/key-generation path so project state and existing key material cannot be overwritten by routine testnet operations. Do not generate any credentials or validator keys. Keep mainnet startup blocked and test the security settings in an isolated environment.",
+      "dependencies": [
+        "001-isolate-testnet-network-and-state",
+        "002-add-network-selector-and-mainnet-transaction-gate",
+        "003-test-network-boundaries-and-site-behavior",
+        "004-document-testnet-operations-and-mainnet-blockers"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "006-package-testnet-for-local-deployment",
+      "description": "Prepare reproducible Docker and testnet deployment artifacts",
+      "reason": "The assessment found no Docker infrastructure, while the user wants a testnet-deployable result first.",
+      "requirements": "Create a reproducible, non-secret Docker/testnet deployment package with explicit health checks and network configuration. Include deployment instructions and safe state-volume handling that cannot target or erase existing project chain state by default. Configuration must be testnet-only; do not provision resources, deploy the application, create credentials, or enable mainnet startup. Validate the image/package locally or in an isolated environment.",
+      "dockerfilePath": "Dockerfile (new; testnet-only packaging)",
+      "dependencies": [
+        "005-harden-testnet-rpc-and-configuration"
+      ]
+    }
+  ],
+  "metadata": {
+    "planName": "lidex-dual-network",
+    "projectName": "lidex-blockchain",
+    "language": "javascript (Node.js)",
+    "createdAt": "2026-11-14T21:00:27.605+03:00",
+    "version": "1.0"
+  }
+}

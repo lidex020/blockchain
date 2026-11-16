@@ -1,0 +1,33 @@
+{
+  "schema": "lidex-comet-validator-map-v1",
+  "validators": [
+    {
+      "operator": "0xBEa8b652561Bd79D52AE84Ef58E09cA3eb4DfD53",
+      "consensusAddress": "0x960381c9c2F13EeAcBF442519572096dc5A5b03D",
+      "keyType": "secp256k1",
+      "publicKey": "0x033ab11ac681da3256f613147f98496ef9f31086a8c4053f1ead96b7628de0e3d9",
+      "cometAddress": "f19634f0c2e7350206794c91c5026654d71cad80"
+    },
+    {
+      "operator": "0xa016Eb0F890c762E6Af724fe233eBd21189aD6d1",
+      "consensusAddress": "0xDAA8060c37B78646CCcC5472DBc41aBd05a0830c",
+      "keyType": "secp256k1",
+      "publicKey": "0x0231efc5521a10de7de5795ab691d241ea67a938c688e6215cd6bdc6ffd46ce9c6",
+      "cometAddress": "53be9243b8463efab33f2fdf1446e33b50eb99f5"
+    },
+    {
+      "operator": "0x076A5b323114582231d7B55803fFb95981c0B497",
+      "consensusAddress": "0x5cF5bDca8c751eF11eDCBDb97a60dCB44Fab1fCB",
+      "keyType": "secp256k1",
+      "publicKey": "0x022402056e87f0ff29c2572294d156506eabbeb1161a313b75ebd20d43ce2cc1fd",
+      "cometAddress": "b3c3ecdcf99dee698ee38230e6b0d3c9287261b0"
+    },
+    {
+      "operator": "0x1184658b2aEe47029287fD7E38Fc66ee01C5B89B",
+      "consensusAddress": "0x1aD1AC81012C9A18102bc714b6507DDC21586f4b",
+      "keyType": "secp256k1",
+      "publicKey": "0x03c31091e65ab477e02208fa53c604fe2d98dc894a71dc408a97cd9ab30897631f",
+      "cometAddress": "6704c03eb70411f73ff2b8a189b08ee28b96bb92"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ const { ethers } = require('ethers');
 const { Chain } = require('../src/chain.js');
 const { Consensus } = require('../src/consensus.js');
 const { loadGenesis, toExecutionGenesis } = require('../src/genesis.js');
-const { FullStopBlock, MessageType } = require('../src/block.js');
+const { LidexBlock, MessageType } = require('../src/block.js');
 const { Protocol } = require('../src/protocol.js');
 const { Execution } = require('../src/execution.js');
 const { COIN, SYSTEM, BLOCK, FEES, STAKING, COMMUNITY, ALLOCATIONS, REWARDS, CHAIN, VERSION, GAS, PROTOCOL, POOL } = require('../src/constants.js');
@@ -51,7 +51,7 @@ class Suite {
     } catch (err) {
       this.results.push({ label, ok: false, error: err });
       process.stdout.write(`  FAIL ${label}\n       ${err.message}\n`);
-      if (process.env.FULLSTOP_TEST_TRACE && err.stack) process.stdout.write(`${err.stack}\n`);
+      if (process.env.LIDEX_TEST_TRACE && err.stack) process.stdout.write(`${err.stack}\n`);
     }
   }
 
@@ -211,7 +211,7 @@ class TestNetwork {
             if (msg.type === MessageType.Tx) {
               await node.chain.pool.add(msg.raw, { source: 'peer', gossip: false });
             } else if (msg.type === MessageType.Block) {
-              const block = FullStopBlock.fromJSON(msg.block);
+              const block = LidexBlock.fromJSON(msg.block);
               if (block.height === node.chain.head.height + 1) {
                 const ok = await node.chain.commitBlock(block, { source: 'sync' });
                 void ok;

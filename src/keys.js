@@ -9,7 +9,7 @@
  * machine - the signing interface is a single function.
  *
  * Keys are never written to the repository: `data/` is git-ignored, and
- * `fullstop keys new` refuses to write outside the current working directory so
+ * `lidex keys new` refuses to write outside the current working directory so
  * a key file cannot land somewhere the operator did not ask for.
  */
 
@@ -54,7 +54,10 @@ function readKey(file) {
     publicKey: material.publicKey,
     consensusAddress: raw.consensusAddress ?? material.address,
   };
-  if (raw.consensusPrivateKey) {
+  if (Object.prototype.hasOwnProperty.call(raw, 'consensusPrivateKey')) {
+    if (typeof raw.consensusPrivateKey !== 'string' || raw.consensusPrivateKey.length === 0) {
+      throw new Error(`key file ${file}: configured consensusPrivateKey must be a non-empty private key`);
+    }
     const c = keyFromPrivate(raw.consensusPrivateKey);
     identity.consensusPrivateKey = c.privateKey;
     identity.consensusAddress = raw.consensusAddress ?? c.address;
@@ -67,7 +70,16 @@ function readKey(file) {
 
 /** A key that can sign consensus votes; keeps the private key out of memory logs. */
 function toIdentity(key) {
-  return { address: key.address, privateKey: key.privateKey, consensusAddress: key.consensusAddress, label: key.label };
+  const identity = {
+    address: key.address,
+    privateKey: key.privateKey,
+    consensusAddress: key.consensusAddress,
+    label: key.label,
+  };
+  if (Object.prototype.hasOwnProperty.call(key, 'consensusPrivateKey')) {
+    identity.consensusPrivateKey = key.consensusPrivateKey;
+  }
+  return identity;
 }
 
 module.exports = { newKey, writeKey, readKey, toIdentity };

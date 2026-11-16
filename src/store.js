@@ -12,13 +12,15 @@
  * replays blocks.jsonl from genesis through the same deterministic execution
  * path it uses for live blocks, and verifies that every recomputed state root
  * and app hash matches what is recorded in the header. That is slower than a
- * snapshot and much harder to get wrong: a corrupted or truncated file shows up
- * as a root mismatch instead of as silent state divergence.
+ * snapshot and much harder to get wrong: a malformed or truncated record
+ * fails closed and leaves the original files untouched.
  */
 
 const fs = require('fs');
 const path = require('path');
 
+const STORE_FILES = ['genesis.json', 'blocks.jsonl', 'receipts.jsonl', 'meta.json'];
+const ALLOWED_STORE_ENTRIES = new Set([...STORE_FILES, 'node.lock']);
 const activeLockReleases = new Set();
 let lockHandlersInstalled = false;
 
@@ -54,9 +56,88 @@ class Store {
 
   static open(dir) {
     const store = new Store(path.join(dir, 'chain'));
-    fs.mkdirSync(store.dir, { recursive: true });
+    let existing = false;
+    try {
+      fs.lstatSync(store.dir);
+      existing = true;
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+
+    if (existing) {
+      store._assertClassified();
+      store.isFresh = false;
+    } else {
+      fs.mkdirSync(store.dir, { recursive: true });
+      store.isFresh = true;
+    }
     store._acquireLock();
     return store;
+  }
+
+  /**
+   * Existing chain directories must be recognized as complete before startup
+   * writes even the operational lock. An empty, partial, symlinked, or
+   * otherwise unclassified directory is never a genesis-initialization target.
+   */
+  _assertClassified() {
+    const reject = (reason) => {
+      throw new Error(
+        `existing chain store ${this.dir} is incomplete or unclassified (${reason}). ` +
+        'Refusing to acquire a lock or initialize genesis; preserve the files and inspect only a separate copy.'
+      );
+    };
+
+    let dirStat;
+    try {
+      dirStat = fs.lstatSync(this.dir);
+    } catch (error) {
+      reject(`cannot inspect directory: ${error.message}`);
+    }
+    if (!dirStat.isDirectory()) reject('chain path is not a regular directory');
+
+    const entries = fs.readdirSync(this.dir);
+    const unexpected = entries.filter((entry) => !ALLOWED_STORE_ENTRIES.has(entry));
+    const missing = STORE_FILES.filter((file) => !entries.includes(file));
+    const nonFiles = STORE_FILES.filter((file) => {
+      try {
+        return !fs.lstatSync(path.join(this.dir, file)).isFile();
+      } catch {
+        return true;
+      }
+    });
+    let invalidLock = false;
+    if (entries.includes('node.lock')) {
+      try {
+        invalidLock = !fs.lstatSync(path.join(this.dir, 'node.lock')).isFile();
+      } catch {
+        invalidLock = true;
+      }
+    }
+    if (missing.length || nonFiles.length || unexpected.length || invalidLock) {
+      reject([
+        missing.length ? `missing ${missing.join(', ')}` : null,
+        nonFiles.length ? `not regular files ${nonFiles.join(', ')}` : null,
+        unexpected.length ? `unexpected entries ${unexpected.join(', ')}` : null,
+        invalidLock ? 'node.lock is not a regular file' : null,
+      ].filter(Boolean).join('; '));
+    }
+
+    let meta;
+    try {
+      meta = JSON.parse(fs.readFileSync(this.metaPath, 'utf8'));
+    } catch (error) {
+      reject(`metadata is unreadable: ${error.message}`);
+    }
+    if (
+      !meta ||
+      typeof meta !== 'object' ||
+      Array.isArray(meta) ||
+      typeof meta.chainId !== 'string' ||
+      typeof meta.genesisHash !== 'string'
+    ) {
+      reject('metadata does not identify a chain and genesis');
+    }
   }
 
   /**
@@ -98,7 +179,7 @@ class Store {
         );
       }
     }
-    fs.writeFileSync(file, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString(), node: process.env.FULLSTOP_NODE_NAME ?? null }, null, 2));
+    fs.writeFileSync(file, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString(), node: process.env.LIDEX_NODE_NAME ?? null }, null, 2));
     const release = () => {
       if (!activeLockReleases.delete(release)) return;
       try {
@@ -113,7 +194,13 @@ class Store {
   }
 
   exists() {
-    return fs.existsSync(this.blocksPath) && fs.existsSync(this.metaPath);
+    return STORE_FILES.every((file) => {
+      try {
+        return fs.lstatSync(path.join(this.dir, file)).isFile();
+      } catch {
+        return false;
+      }
+    });
   }
 
   saveGenesis(genesis) {
@@ -122,7 +209,7 @@ class Store {
       if (normalizeJson(existing) !== normalizeJson(JSON.stringify(genesis))) {
         throw new Error(
           `genesis.json in ${this.dir} does not match the genesis document provided. ` +
-          'Refusing to run a node against a different chain - delete the data directory to start a fresh one.'
+          'Refusing to run against a different chain. Preserve the data directory and inspect a separate copy; do not delete or replace the source.'
         );
       }
       return;
@@ -164,7 +251,7 @@ class Store {
   flush() {
     // There is no separate commit log on purpose: the commit that sealed a
     // height is part of that height's block record (see Chain.recordCommit and
-    // FullStopBlock.withCommit), so a replay reads exactly one file and cannot
+    // LidexBlock.withCommit), so a replay reads exactly one file and cannot
     // find a commit that belongs to a different block.
     if (this._buffer.length) {
       fs.appendFileSync(this.blocksPath, this._buffer.join('\n') + '\n');
@@ -176,51 +263,39 @@ class Store {
     }
   }
 
-  /** Read all blocks, tolerating a partially written trailing line. */
+  /** Read all blocks strictly; malformed or torn records are never repaired in place. */
   readBlocks() {
-    if (!fs.existsSync(this.blocksPath)) return [];
-    const raw = fs.readFileSync(this.blocksPath, 'utf8');
-    const out = [];
-    const lines = raw.split('\n');
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        out.push(JSON.parse(line));
-      } catch {
-        // Torn write at the tail: drop it and everything after it, then
-        // rewrite the file so the next flush appends cleanly.
-        fs.writeFileSync(this.blocksPath, out.map((b) => JSON.stringify(b)).join('\n') + (out.length ? '\n' : ''));
-        return out;
-      }
-    }
-    return out;
+    return this._readJsonLines(this.blocksPath);
   }
 
   readReceipts() {
-    if (!fs.existsSync(this.receiptsPath)) return [];
-    const raw = fs.readFileSync(this.receiptsPath, 'utf8');
+    return this._readJsonLines(this.receiptsPath);
+  }
+
+  _readJsonLines(file) {
+    if (!fs.existsSync(file)) return [];
+    const raw = fs.readFileSync(file, 'utf8');
     const out = [];
-    for (const line of raw.split('\n')) {
+    for (const [index, line] of raw.split('\n').entries()) {
       if (!line.trim()) continue;
       try {
         out.push(JSON.parse(line));
       } catch {
-        break;
+        const name = path.basename(file);
+        throw new Error(
+          `invalid ${name} record at line ${index + 1}; preserving source bytes and refusing recovery. ` +
+          'Inspect only a separate copy; do not truncate or rewrite the source log.'
+        );
       }
     }
     return out;
   }
 
-  /** Rewrite both logs, used after a replay repair. */
-  rewrite(blocks, receiptsByHeight) {
-    this.flush();
-    this._buffer = [];
-    this._receiptBuffer = [];
-    fs.writeFileSync(this.blocksPath, blocks.map((b) => JSON.stringify(b)).join('\n') + (blocks.length ? '\n' : ''));
-    fs.writeFileSync(
-      this.receiptsPath,
-      blocks.map((b) => JSON.stringify({ height: b.header.height, receipts: receiptsByHeight.get(b.header.height) ?? [] })).join('\n') +
-        (blocks.length ? '\n' : '')
+  /** Explicitly reject the legacy repair API so callers cannot overwrite source history. */
+  rewrite() {
+    throw new Error(
+      'Store.rewrite is disabled: non-destructive recovery never rewrites chain logs. ' +
+      'Preserve the logs and investigate only an isolated copy.'
     );
   }
 

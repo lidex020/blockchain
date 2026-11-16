@@ -358,7 +358,7 @@ class Protocol {
   /**
    * Full supply audit: sum every balance in the state trie and compare with
    * the ledger's own accounting. Run at block boundaries by the node when
-   * `FULLSTOP_AUDIT=1`, and always by the test suite.
+   * `LIDEX_AUDIT=1`, and always by the test suite.
    */
   async supplyAudit(execution) {
     const { total, accounts } = await execution.sumAllBalances();

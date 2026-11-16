@@ -1,5 +1,5 @@
 {
-  "name": "fullstop-blockchain",
+  "name": "lidex-blockchain",
   "version": "0.1.0",
   "description": "Lidex - an independent, public, EVM-compatible Layer 1 with the native coin LDX",
   "homepage": "https://lidex.tech",
@@ -11,13 +11,17 @@
     "node": ">=20"
   },
   "bin": {
-    "fullstop": "src/cli.js"
+    "lidex": "src/cli.js"
   },
   "scripts": {
     "compile": "node scripts/compile-contracts.js",
     "build:wallet": "esbuild web/appkit-entry.js --bundle --format=esm --target=es2022 --minify --outfile=web/appkit.bundle.js",
+    "build": "node --check src/abci/application.js && node --check src/abci/socket-server.js && node --check src/abci/serve.js && node --check scripts/export-devnet-comet-map.js && node -e \"require('./src/abci/protobuf')\"",
     "init": "node scripts/init-devnet.js",
     "start": "node src/node.js",
+    "abci:testnet": "node src/abci/serve.js",
+    "abci:devnet": "node src/abci/serve.js --profile profiles/cometbft.devnet.json",
+    "abci:devnet:map": "node scripts/export-devnet-comet-map.js",
     "predevnet": "npm run build:wallet",
     "devnet": "node scripts/start-devnet.js",
     "faucet": "node scripts/faucet.js",
@@ -41,6 +45,7 @@
     "ethereum-cryptography": "^3.2.0",
     "ethers": "^6.17.0",
     "express": "^5.3.0",
+    "protobufjs": "7.5.4",
     "solc": "^0.8.37",
     "ws": "^8.22.0"
   }

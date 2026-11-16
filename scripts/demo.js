@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * End-to-end tour of a Full Stop network.
+ * End-to-end tour of a Lidex network.
  *
  * The point of this script is that nothing it prints is taken on trust: every
  * action is followed by a read of the chain that proves the effect the action
- * claimed to have. State changes go through the same `fullstop` CLI a developer
+ * claimed to have. State changes go through the same `lidex` CLI a developer
  * would use, so running this also exercises the CLI, the RPC surface, the
  * factories, the staking module and the community pool in one pass.
  *
@@ -64,7 +64,7 @@ async function rpc(url, method, params = []) {
   return json.result;
 }
 
-/** Run one `fullstop` command, returning stdout. Throws when it exits non-zero. */
+/** Run one `lidex` command, returning stdout. Throws when it exits non-zero. */
 function cli(argv, { allowFail = false } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [CLI, ...argv], { cwd: ROOT });
@@ -73,7 +73,7 @@ function cli(argv, { allowFail = false } = {}) {
     child.stdout.on('data', (d) => (out += d));
     child.stderr.on('data', (d) => (err += d));
     child.on('exit', (code) => {
-      if (code !== 0 && !allowFail) return reject(new Error(`fullstop ${argv.join(' ')} exited ${code}: ${(err || out).trim()}`));
+      if (code !== 0 && !allowFail) return reject(new Error(`lidex ${argv.join(' ')} exited ${code}: ${(err || out).trim()}`));
       resolve({ code, out, err });
     });
   });

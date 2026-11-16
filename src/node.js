@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Full Stop node.
+ * Lidex node.
  *
  * One process, three faces:
  *   - the consensus engine (only when a validator key is supplied),
@@ -66,8 +66,54 @@ function assertSupportedNetwork(genesis) {
   }
 }
 
+function loadPublicUrls(env = process.env, network = null) {
+  const load = (name, protocol, pathname) => {
+    const value = env[name];
+    if (value === undefined || value === '') return null;
+    let url;
+    try {
+      url = new URL(value);
+    } catch {
+      throw new Error(`${name} must be an absolute ${protocol}// URL`);
+    }
+    if (
+      url.protocol !== protocol ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      url.pathname !== pathname ||
+      url.search ||
+      url.hash
+    ) {
+      throw new Error(`${name} must be an absolute ${protocol}// URL with path ${pathname}`);
+    }
+    return `${url.origin}${pathname === '/' ? '' : pathname}`;
+  };
+  const urls = {
+    rpc: load('LIDEX_PUBLIC_RPC_URL', 'https:', '/'),
+    ws: load('LIDEX_PUBLIC_WS_URL', 'wss:', '/ws'),
+    explorer: load('LIDEX_EXPLORER_URL', 'https:', '/'),
+  };
+  if (network === 'devnet' && Object.values(urls).some(Boolean)) {
+    throw new Error('devnet must not advertise production public endpoint URLs');
+  }
+  const expectedHosts = network === 'mainnet'
+    ? { rpc: 'rpc.lidex.tech', ws: 'ws.lidex.tech', explorer: 'explorer.lidex.tech' }
+    : network === 'testnet'
+      ? { rpc: 'testnet-rpc.lidex.tech', ws: 'testnet-rpc.lidex.tech', explorer: 'testnet.lidex.tech' }
+      : null;
+  if (expectedHosts) {
+    for (const [service, expectedHost] of Object.entries(expectedHosts)) {
+      if (urls[service] && new URL(urls[service]).hostname !== expectedHost) {
+        throw new Error(`${service} public URL does not belong to the configured ${network} domain`);
+      }
+    }
+  }
+  return urls;
+}
+
 function loadConfig(args) {
-  const genesisPath = args.genesis ?? process.env.FULLSTOP_GENESIS;
+  const genesisPath = args.genesis ?? process.env.LIDEX_GENESIS;
   if (!genesisPath) throw new Error('--genesis <file> is required (see scripts/init-devnet.js to create one)');
   const genesis = loadGenesis(genesisPath);
   assertSupportedNetwork(genesis);
@@ -115,13 +161,13 @@ function loadConfig(args) {
     reviewers: genesis.reviewers.map((address) => ({ address })),
     minBlockIntervalMs: genesis.consensus.min_block_interval_ms,
     maxClockDriftMs: 15_000,
-    supplyAuditEvery: process.env.FULLSTOP_AUDIT ? 1 : 0,
+    supplyAuditEvery: process.env.LIDEX_AUDIT ? 1 : 0,
     consensusTimeouts: {
       proposeBaseMs: Number(args['propose-timeout'] ?? 1200),
       voteBaseMs: Number(args['vote-timeout'] ?? 900),
     },
   };
-  return { genesis, genesisPath, datadir, key, params, args };
+  return { genesis, genesisPath, datadir, key, params, args, publicUrls: loadPublicUrls(process.env, genesis.network) };
 }
 
 function expandAllocations(serialized) {
@@ -142,12 +188,13 @@ function expandAllocations(serialized) {
 const DEFAULT_PORT = 72131;
 
 class Node {
-  constructor({ genesis, datadir, key, params, args }) {
+  constructor({ genesis, datadir, key, params, args, publicUrls }) {
     this.genesis = genesis;
     this.datadir = datadir;
     this.key = key;
     this.params = params;
     this.args = args;
+    this.publicUrls = publicUrls ?? loadPublicUrls(process.env, genesis.network);
     this.port = Number(this.args.port ?? DEFAULT_PORT);
     this.moniker = this.args.moniker ?? `node-${this.port}`;
     this.nodeId = this.args['node-id'] ?? ethers.hexlify(ethers.randomBytes(8)).slice(2);
@@ -158,7 +205,7 @@ class Node {
     // may serve different clients and therefore set different budgets. The
     // default is the published one; a benchmark or an internal indexer raises
     // it deliberately instead of the node silently dropping honest traffic.
-    this.rpcRateLimit = Number(this.args['rpc-rate-limit'] ?? process.env.FULLSTOP_RPC_RATE_LIMIT ?? PROTOCOL.rpcRateLimit);
+    this.rpcRateLimit = Number(this.args['rpc-rate-limit'] ?? process.env.LIDEX_RPC_RATE_LIMIT ?? PROTOCOL.rpcRateLimit);
   }
 
   async start() {
@@ -255,6 +302,7 @@ class Node {
 
   buildServer() {
     const app = express();
+    app.set('trust proxy', 'loopback');
     app.use(cors());
     app.use(express.json({ limit: '12mb' }));
 
@@ -274,32 +322,32 @@ class Node {
       const st = c.status();
       const supply = c.supplyReport();
       const lines = [
-        '# TYPE fullstop_height gauge',
-        `fullstop_height ${st.height}`,
-        '# TYPE fullstop_peer_count gauge',
-        `fullstop_peer_count ${this.peerCount()}`,
-        '# TYPE fullstop_validators gauge',
-        `fullstop_validators ${st.validators}`,
-        '# TYPE fullstop_mempool_size gauge',
-        `fullstop_mempool_size ${st.mempool.total}`,
-        '# TYPE fullstop_rpc_requests_total counter',
-        `fullstop_rpc_requests_total ${this.metrics.rpcCalls}`,
-        '# TYPE fullstop_rpc_errors_total counter',
-        `fullstop_rpc_errors_total ${this.metrics.rpcErrors}`,
-        '# TYPE fullstop_p2p_messages_total counter',
-        `fullstop_p2p_messages_total ${this.metrics.p2pMessages}`,
-        '# TYPE fullstop_blocks_applied_total counter',
-        `fullstop_blocks_applied_total ${this.metrics.blocksApplied}`,
-        '# TYPE fullstop_supply_issued_wei gauge',
-        `fullstop_supply_issued_wei ${supply.totalIssued}`,
-        '# TYPE fullstop_supply_burned_wei gauge',
-        `fullstop_supply_burned_wei ${supply.burned}`,
-        '# TYPE fullstop_supply_max_wei gauge',
-        `fullstop_supply_max_wei ${supply.maxSupply}`,
-        '# TYPE fullstop_power gauge',
-        `fullstop_power ${this.consensus?.status?.().totalPower ?? 0}`,
-        '# TYPE fullstop_consensus_round gauge',
-        `fullstop_consensus_round ${this.consensus?.round ?? 0}`,
+        '# TYPE lidex_height gauge',
+        `lidex_height ${st.height}`,
+        '# TYPE lidex_peer_count gauge',
+        `lidex_peer_count ${this.peerCount()}`,
+        '# TYPE lidex_validators gauge',
+        `lidex_validators ${st.validators}`,
+        '# TYPE lidex_mempool_size gauge',
+        `lidex_mempool_size ${st.mempool.total}`,
+        '# TYPE lidex_rpc_requests_total counter',
+        `lidex_rpc_requests_total ${this.metrics.rpcCalls}`,
+        '# TYPE lidex_rpc_errors_total counter',
+        `lidex_rpc_errors_total ${this.metrics.rpcErrors}`,
+        '# TYPE lidex_p2p_messages_total counter',
+        `lidex_p2p_messages_total ${this.metrics.p2pMessages}`,
+        '# TYPE lidex_blocks_applied_total counter',
+        `lidex_blocks_applied_total ${this.metrics.blocksApplied}`,
+        '# TYPE lidex_supply_issued_wei gauge',
+        `lidex_supply_issued_wei ${supply.totalIssued}`,
+        '# TYPE lidex_supply_burned_wei gauge',
+        `lidex_supply_burned_wei ${supply.burned}`,
+        '# TYPE lidex_supply_max_wei gauge',
+        `lidex_supply_max_wei ${supply.maxSupply}`,
+        '# TYPE lidex_power gauge',
+        `lidex_power ${this.consensus?.status?.().totalPower ?? 0}`,
+        '# TYPE lidex_consensus_round gauge',
+        `lidex_consensus_round ${this.consensus?.round ?? 0}`,
       ];
       res.type('text/plain').send(lines.join('\n') + '\n');
     });
@@ -353,11 +401,11 @@ class Node {
         chainName: CHAIN.displayName,
         chainId: String(this.chain.chainId),
         networkId: Number(this.chain.chainId),
-        rpcUrl: `${req.protocol}://${req.get('host')}`,
-        wsUrl: `${req.protocol === 'https' ? 'wss' : 'ws'}://${req.get('host')}/ws`,
+        rpcUrl: this.publicUrls.rpc ?? `${req.protocol}://${req.get('host')}`,
+        wsUrl: this.publicUrls.ws ?? `${req.protocol === 'https' ? 'wss' : 'ws'}://${req.get('host')}/ws`,
         // shaped for wallet_addEthereumChain: `symbol` is the field a wallet reads
         currency: { name: COIN.name, symbol: COIN.ticker, decimals: COIN.decimals },
-        explorerUrl: `${req.protocol}://${req.get('host')}/`,
+        explorerUrl: this.publicUrls.explorer ?? `${req.protocol}://${req.get('host')}/`,
         contracts: this.chain.genesis.system_contracts ?? {},
         faucet: this.genesis.faucet ?? { enabled: false },
         // read from the running chain, not from the compiled-in default, so a
@@ -373,7 +421,7 @@ class Node {
         return next(err);
       }
 
-      const names = ['FullStopERC20Factory', 'FullStopERC721Factory', 'FullStopERC1155Factory'];
+      const names = ['LidexERC20Factory', 'LidexERC721Factory', 'LidexERC1155Factory'];
       const abis = {};
       for (const name of names) {
         const abi = compiled.artifacts?.[name]?.abi;
@@ -401,7 +449,7 @@ class Node {
       socket.isAlive = true;
       socket.on('pong', () => (socket.isAlive = true));
       const subs = new Set();
-      socket.send(JSON.stringify({ jsonrpc: '2.0', method: 'fullstop.subscribeStatus', params: { chainId: String(this.chain.chainId), height: this.chain.head.height } }));
+      socket.send(JSON.stringify({ jsonrpc: '2.0', method: 'lidex.subscribeStatus', params: { chainId: String(this.chain.chainId), height: this.chain.head.height } }));
       socket.on('message', async (buf) => {
         let msg;
         try {
@@ -491,7 +539,7 @@ async function main() {
   if (args.help) {
     process.stdout.write(
       [
-        'Full Stop node',
+        'Lidex node',
         '',
         '  --genesis <file>      genesis document (required)',
         '  --datadir <dir>       data directory (default: <genesis dir>/nodes/<port>)',
@@ -528,4 +576,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { Node, loadConfig, parseArgs, assertSupportedNetwork };
+module.exports = { Node, loadConfig, parseArgs, assertSupportedNetwork, loadPublicUrls };

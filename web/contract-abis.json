@@ -1,6 +1,6 @@
 {
   "abis": {
-    "FullStopERC20Factory": [
+    "LidexERC20Factory": [
       {
         "inputs": [
           {
@@ -15,7 +15,7 @@
               { "internalType": "bool", "name": "transferRestricted", "type": "bool" },
               { "internalType": "address", "name": "supplyRecipient", "type": "address" }
             ],
-            "internalType": "struct FullStopERC20Factory.TokenParams",
+            "internalType": "struct LidexERC20Factory.TokenParams",
             "name": "p",
             "type": "tuple"
           }
@@ -26,7 +26,7 @@
         "type": "function"
       }
     ],
-    "FullStopERC721Factory": [
+    "LidexERC721Factory": [
       {
         "inputs": [
           {
@@ -36,7 +36,7 @@
               { "internalType": "uint256", "name": "maxSupply", "type": "uint256" },
               { "internalType": "string", "name": "contractURI", "type": "string" }
             ],
-            "internalType": "struct FullStopERC721Factory.CollectionParams",
+            "internalType": "struct LidexERC721Factory.CollectionParams",
             "name": "p",
             "type": "tuple"
           }
@@ -47,7 +47,7 @@
         "type": "function"
       }
     ],
-    "FullStopERC1155Factory": [
+    "LidexERC1155Factory": [
       {
         "inputs": [
           { "internalType": "string", "name": "name", "type": "string" },

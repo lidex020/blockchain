@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Compile the Full Stop system contracts with solc and write artifacts.
+ * Compile the Lidex system contracts with solc and write artifacts.
  *
  * Artifacts (ABI + bytecode) are committed alongside the source so that a node
  * can deploy the genesis asset factory without a toolchain, and so a reviewer

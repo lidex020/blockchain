@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Start a local Full Stop devnet: N validator nodes plus a non-validating RPC
+ * Start a local Lidex devnet: N validator nodes plus a non-validating RPC
  * node, all in one command, with genesis created if it does not exist.
  *
  *   node scripts/start-devnet.js --validators 4 --explorer-port 7300
@@ -29,7 +29,7 @@ function arg(name, fallback) {
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
   process.stdout.write(
     [
-      'Start a local Full Stop devnet: N validator processes + 1 RPC node.',
+      'Start a local Lidex devnet: N validator processes + 1 RPC node.',
       '',
       '  node scripts/start-devnet.js [--validators 4] [--out data/devnet]',
       '                              [--base-port 7301] [--reset] [--help]',
@@ -154,7 +154,7 @@ async function main() {
   });
 
   const rpcUrl = `http://127.0.0.1:${rpcPort}`;
-  process.stdout.write(`Starting Full Stop devnet; waiting for RPC health at ${rpcUrl}/health\n`);
+  process.stdout.write(`Starting Lidex devnet; waiting for RPC health at ${rpcUrl}/health\n`);
   try {
     await waitForRpc(rpcPort, procs);
   } catch (err) {
@@ -170,7 +170,7 @@ async function main() {
   process.stdout.write(
     [
       '',
-      `Full Stop devnet started: ${validators.length} validators + 1 RPC node`,
+      `Lidex devnet started: ${validators.length} validators + 1 RPC node`,
       `  chain id     ${genesis.chain_id}`,
       `  rpc          ${rpcUrl}   (JSON-RPC + websocket at /ws)`,
       `  explorer     ${rpcUrl}/  (block explorer, supply dashboard, asset creator)`,
@@ -250,7 +250,7 @@ function waitForChildren(procs) {
 }
 
 function launch(args, name, onUnexpectedExit) {
-  const child = spawn(NODE_BIN, args, { cwd: ROOT, env: { ...process.env, FULLSTOP_NODE_NAME: name } });
+  const child = spawn(NODE_BIN, args, { cwd: ROOT, env: { ...process.env, LIDEX_NODE_NAME: name } });
   const prefix = `[${name.padEnd(3)}]`;
   const pipe = (stream, target) => {
     stream.setEncoding('utf8');

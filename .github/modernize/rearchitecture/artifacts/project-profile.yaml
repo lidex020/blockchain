@@ -1,0 +1,48 @@
+﻿project:
+  scope_path: "lidex"
+  loc: 11639
+  languages: [javascript]
+  git: true
+  structure:
+    artifacts: "Build and project-artifact output directory; excluded from source LOC."
+    contracts: "Contract-related project directory; contents not analyzed during coordinator recon."
+    data: "Existing persistent state and network-specific data directories; preserve all contents."
+    docs: "Project documentation directory."
+    scripts: "Project scripts directory."
+    src: "Application source directory."
+    tests: "Project test directory."
+    tools: "Project tools directory."
+    web: "Web client directory."
+    .github: "Project automation and coordination metadata."
+  notes: "Nested Git repository with a single Node.js package manifest. LOC is a source-only JavaScript/TypeScript nonblank-line count (37 files); data and generated/project artifacts are excluded. Existing data and keys must not be reset or deleted. Go, Docker, and protoc are reported absent from PATH; target CometBFT environment feasibility needs verification."
+
+assessment:
+  change_type: rewrite
+  rationale: |
+    Replace the custom JavaScript consensus path with a real CometBFT ABCI++ integration while retaining the existing JavaScript EthereumJS execution engine and durable state. The repository has a Node.js package and nested Git repo; the target requires a Go/CometBFT host boundary, and target environment availability is unverified. No production chain IDs, allocations, validator sets, or keys may be invented.
+  transformations:
+    - fromStack: "LIDEX custom JavaScript consensus engine"
+      toStack: "CometBFT ABCI++ consensus with existing JavaScript EthereumJS execution"
+      toStackVersion: "unspecified; preserve user-requested CometBFT/ABCI++ target without guessing a version"
+  grouping_needed: false
+  deep_planning: undecided
+
+progress_sync:
+  run_id: "d22b56eb-d43a-4ac1-9e27-b06854d3de2b"
+  grouping_mode: none
+  execution_mode: saved
+  plan_start_time: "2026-11-14T18:38:08Z"
+  plan_completed_time: null
+  execution_start_time: null
+  execution_completed_time: null
+  validation_start_time: null
+  validation_completed_time: null
+  total_phases: null
+  completed_phases: 0
+  total_modules: 1
+  completed_modules: 0
+  total_tasks: null
+  completed_tasks: 0
+  total_commits: null
+  build_verified: false
+  test_verified: false

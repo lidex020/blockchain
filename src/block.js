@@ -1,8 +1,8 @@
 'use strict';
 /**
- * Block and vote encoding for the Full Stop consensus layer.
+ * Block and vote encoding for the Lidex consensus layer.
  *
- * A Full Stop block wraps an EVM block (the transactions themselves are
+ * A Lidex block wraps an EVM block (the transactions themselves are
  * ordinary RLP-encoded Ethereum transactions) with the consensus header the
  * validator network signs: parent link, proposer, round, data/evidence roots,
  * the EVM state root produced by executing those transactions, and the
@@ -44,7 +44,7 @@ function toHexRoot(bytes) {
   return ethers.hexlify(bytes);
 }
 
-class FullStopBlock {
+class LidexBlock {
   /**
    * @param {object} arg
    * @param {object} arg.header consensus header fields (without hash)
@@ -106,7 +106,7 @@ class FullStopBlock {
       txCount: txs.length,
       software: VERSION.software,
     };
-    return new FullStopBlock({ header, txs, evidence, lastCommit });
+    return new LidexBlock({ header, txs, evidence, lastCommit });
   }
 
   get hash() {
@@ -125,7 +125,7 @@ class FullStopBlock {
 
   /** Copy of this block with a different evidence list (header fields recomputed). */
   withEvidence(evidence) {
-    return FullStopBlock.assemble({
+    return LidexBlock.assemble({
       chainId: this.header.chainId,
       height: this.header.height,
       time: this.header.time,
@@ -145,7 +145,7 @@ class FullStopBlock {
 
   /** Copy of this block with the sealing commit attached. */
   withCommit(commit) {
-    return new FullStopBlock({
+    return new LidexBlock({
       header: this.header,
       txs: this.txs,
       evidence: this.evidence,
@@ -155,7 +155,7 @@ class FullStopBlock {
   }
 
   static fromJSON(obj) {
-    return new FullStopBlock({
+    return new LidexBlock({
       header: obj.header,
       txs: obj.txs ?? [],
       evidence: obj.evidence ?? [],
@@ -177,7 +177,7 @@ class FullStopBlock {
     if (h.height < 0) errors.push('negative height');
     if (h.txs && h.txs.length > (BLOCK.maxBlockTxs ?? 5000)) errors.push('too many transactions');
     if (block.txs.length !== h.txCount) errors.push(`txCount ${h.txCount} does not match ${block.txs.length} transactions`);
-    const expectedData = block.txs.length ? bytesRoot(block.txs) : FullStopBlock.emptyHash();
+    const expectedData = block.txs.length ? bytesRoot(block.txs) : LidexBlock.emptyHash();
     if (expectedData !== undefined && normalize(h.dataHash) !== normalize(bytesToHexSafe(expectedData))) {
       errors.push('dataHash does not match the transaction list');
     }
@@ -249,7 +249,7 @@ function verifyVote(vote, expectedChainId) {
 const ZERO_HASH = '0x' + '00'.repeat(32);
 
 module.exports = {
-  FullStopBlock,
+  LidexBlock,
   MessageType,
   signTag,
   voteTag,

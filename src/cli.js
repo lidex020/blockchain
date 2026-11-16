@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Full Stop command line interface.
+ * Lidex command line interface.
  *
  * A thin, honest wrapper over the pieces that already exist: the node, the
  * devnet generator, the key files, and the JSON-RPC surface. Everything here
@@ -9,12 +9,12 @@
  * reference client, not a privileged tool. Anything that changes chain state
  * is an ordinary signed transaction and costs gas.
  *
- *   fullstop help
- *   fullstop keys new --label validator-1 --out data/devnet/keys
- *   fullstop status --rpc http://127.0.0.1:7300
- *   fullstop send --rpc ... --key data/devnet/keys/alice.json --to 0x.. --value 1.5
- *   fullstop stake bond --rpc ... --key ... --operator 0x.. --value 250
- *   fullstop asset token --rpc ... --key ... --name "Demo" --symbol DEMO ...
+ *   lidex help
+ *   lidex keys new --label validator-1 --out data/devnet/keys
+ *   lidex status --rpc http://127.0.0.1:7300
+ *   lidex send --rpc ... --key data/devnet/keys/alice.json --to 0x.. --value 1.5
+ *   lidex stake bond --rpc ... --key ... --operator 0x.. --value 250
+ *   lidex asset token --rpc ... --key ... --name "Demo" --symbol DEMO ...
  */
 
 const fs = require('fs');
@@ -68,21 +68,21 @@ async function rpc(url, method, params = []) {
   } catch (err) {
     // A transport failure is almost always "you are not talking to a node", and
     // a bare `fetch failed` does not say that, so name the url and the fix.
-    throw new Error(`no node reachable at ${url} (${err.message}) - start one with \`fullstop devnet\` or pass --rpc <url>`);
+    throw new Error(`no node reachable at ${url} (${err.message}) - start one with \`lidex devnet\` or pass --rpc <url>`);
   }
   const json = await res.json();
   if (json.error) throw new Error(`${method}: ${json.error.message}`);
   return json.result;
 }
 
-const fmtFstop = (wei) => `${ethers.formatUnits(BigInt(wei ?? 0), COIN.decimals)} ${COIN.ticker}`;
+const fmtLdx = (wei) => `${ethers.formatUnits(BigInt(wei ?? 0), COIN.decimals)} ${COIN.ticker}`;
 
 function out(line = '') {
   process.stdout.write(`${line}\n`);
 }
 
 function fail(message) {
-  process.stderr.write(`fullstop: ${message}\n`);
+  process.stderr.write(`lidex: ${message}\n`);
   process.exit(1);
 }
 
@@ -114,7 +114,7 @@ async function send(wallet, url, tx, { wait = true, quiet = false } = {}) {
       const status = Number(BigInt(receipt.status));
       if (!quiet) {
         out(`  included in block ${Number(BigInt(receipt.blockNumber))}, status ${status === 1 ? 'success' : 'REVERTED'}, gas used ${Number(BigInt(receipt.gasUsed))}`);
-        out(`  fee paid ${fmtFstop(BigInt(receipt.effectiveGasPrice) * BigInt(receipt.gasUsed))}`);
+        out(`  fee paid ${fmtLdx(BigInt(receipt.effectiveGasPrice) * BigInt(receipt.gasUsed))}`);
       }
       return { hash, receipt, ok: status === 1 };
     }
@@ -136,9 +136,9 @@ const commands = {
   async help() {
     out(
       [
-        'Full Stop Blockchain - command line interface',
+        'Lidex Blockchain - command line interface',
         '',
-        '  node                 run a validator or full node (see: fullstop node --help)',
+        '  node                 run a validator or full node (see: lidex node --help)',
         '  devnet               start a local N-validator development network',
         '  init                 generate a genesis + keys for a new devnet/testnet',
         '  compile              compile the system contracts with solc',
@@ -191,7 +191,7 @@ const commands = {
     out(lines.join('\n'));
   },
 
-  /** `fullstop keys new --label alice --out data/devnet/keys` */
+  /** `lidex keys new --label alice --out data/devnet/keys` */
   keys: async (args) => {
     const sub = args._[1];
     if (sub === 'new') {
@@ -209,12 +209,12 @@ const commands = {
     }
     if (sub === 'show') {
       const file = args.file ?? args._[2];
-      if (!file) fail('usage: fullstop keys show <file> [--out <dir>]');
+      if (!file) fail('usage: lidex keys show <file> [--out <dir>]');
       const key = readKey(path.isAbsolute(String(file)) ? String(file) : path.resolve(String(args.out ?? '.'), String(file)));
       out(JSON.stringify({ label: key.label, address: key.address, consensusAddress: key.consensusAddress ?? key.address }, null, 2));
       return;
     }
-    fail('usage: fullstop keys new --label <name> --out <dir> | keys show --file <path>');
+    fail('usage: lidex keys new --label <name> --out <dir> | keys show --file <path>');
   },
 
   init: async (args) => run(path.join(ROOT, 'scripts', 'init-devnet.js'), passthrough(['validators', 'out', 'chain-id', 'name', 'block-time', 'unbonding-blocks', 'distribution-interval', 'community-round-blocks', 'validator-stake', 'faucet-budget', 'network', 'seed'], args)),
@@ -279,11 +279,11 @@ const commands = {
     out(
       [
         `conservation    ${a.ok ? 'OK' : 'VIOLATED'}`,
-        `on-chain sum    ${fmtFstop(a.onchainTotal)}`,
-        `minted-burned   ${fmtFstop(a.ledgerTotal)}`,
+        `on-chain sum    ${fmtLdx(a.onchainTotal)}`,
+        `minted-burned   ${fmtLdx(a.ledgerTotal)}`,
         `difference      ${a.difference}`,
         `accounts seen   ${a.accounts}`,
-        `head-room       ${fmtFstop(a.headroom)} below the cap`,
+        `head-room       ${fmtLdx(a.headroom)} below the cap`,
       ].join('\n')
     );
     if (!a.ok) process.exitCode = 1;
@@ -297,7 +297,7 @@ const commands = {
       out(
         `  ${v.operator}  ${v.moniker ?? ''}\n` +
           `    status ${v.status.padEnd(10)} commission ${(Number(v.commissionBps) / 100).toFixed(2)}%\n` +
-          `    self ${fmtFstop(v.selfStake)}  total ${fmtFstop(v.totalStake)}  power ${v.power}\n` +
+          `    self ${fmtLdx(v.selfStake)}  total ${fmtLdx(v.totalStake)}  power ${v.power}\n` +
           `    missed ${v.missedBlocks} blocks${v.jailReason ? `  jailed for ${v.jailReason}` : ''}`
       );
     }
@@ -306,7 +306,7 @@ const commands = {
   validator: async (args) => {
     const url = args.rpc ?? 'http://127.0.0.1:7300';
     const address = args._[1];
-    if (!address) fail('usage: fullstop validator <operator-address>');
+    if (!address) fail('usage: lidex validator <operator-address>');
     const v = await rpc(url, 'fs_validator', [address]);
     out(v ? JSON.stringify(v, null, 2) : 'not found');
   },
@@ -314,7 +314,7 @@ const commands = {
   account: async (args) => {
     const url = args.rpc ?? 'http://127.0.0.1:7300';
     const address = args._[1] ?? args.address;
-    if (!address) fail('usage: fullstop account <address>');
+    if (!address) fail('usage: lidex account <address>');
     const a = await rpc(url, 'fs_account', [address]);
     out(JSON.stringify(a, null, 2));
   },
@@ -331,7 +331,7 @@ const commands = {
   tx: async (args) => {
     const url = args.rpc ?? 'http://127.0.0.1:7300';
     const hash = args._[1];
-    if (!hash) fail('usage: fullstop tx <hash>');
+    if (!hash) fail('usage: lidex tx <hash>');
     const [tx, receipt] = await Promise.all([rpc(url, 'eth_getTransactionByHash', [hash]), rpc(url, 'eth_getTransactionReceipt', [hash])]);
     if (!tx) fail('unknown transaction');
     out(JSON.stringify({ transaction: tx, receipt }, null, 2));
@@ -353,14 +353,14 @@ const commands = {
     const list = await rpc(url, 'fs_communityClaims', [{ status: args.status, limit: Number(args.limit ?? 50) }]);
     if (!list.length) return out('no claims recorded');
     for (const c of list) {
-      out(`${c.id.slice(0, 18)}…  ${c.status.padEnd(8)} ${fmtFstop(c.amount)} → ${c.beneficiary}  round ${c.round}  approvals ${c.approvals?.length ?? 0}  ${c.reference ?? ''}`);
+      out(`${c.id.slice(0, 18)}…  ${c.status.padEnd(8)} ${fmtLdx(c.amount)} → ${c.beneficiary}  round ${c.round}  approvals ${c.approvals?.length ?? 0}  ${c.reference ?? ''}`);
     }
   },
 
   async send(args) {
     const url = args.rpc ?? 'http://127.0.0.1:7300';
     const wallet = loadWallet(args, url);
-    if (!args.to || args.value === undefined) fail('usage: fullstop send --to <address> --value <LDX> --key <file>');
+    if (!args.to || args.value === undefined) fail('usage: lidex send --to <address> --value <LDX> --key <file>');
     const gas = args.gas ? BigInt(String(args.gas)) : 21_000n;
     const r = await send(wallet, url, { to: ethers.getAddress(String(args.to)), value: ethers.parseUnits(String(args.value), COIN.decimals), gasLimit: gas, data: args.data ? String(args.data) : '0x' });
     if (!r.ok) process.exitCode = 1;
@@ -398,7 +398,7 @@ const commands = {
         data = systemCall('fundCommunity', [value]);
         break;
       default:
-        fail('usage: fullstop stake register|bond|unbond|rebond|unjail|fund-community --help for flags');
+        fail('usage: lidex stake register|bond|unbond|rebond|unjail|fund-community --help for flags');
     }
     const r = await send(wallet, url, { to: SYSTEM.moduleAddress, value, data, gasLimit: 200_000n });
     if (r.receipt) {
@@ -436,7 +436,7 @@ const commands = {
       if (!r.ok) process.exitCode = 1;
       return;
     }
-    fail('usage: fullstop claim submit --amount <LDX> [--ref <text>] | claim review --id <bytes32> --approve true|false');
+    fail('usage: lidex claim submit --amount <LDX> [--ref <text>] | claim review --id <bytes32> --approve true|false');
   },
 
   async asset(args) {
@@ -455,7 +455,7 @@ const commands = {
         return;
       }
       const addr = args.address ?? args._[2];
-      if (!addr) fail('usage: fullstop asset show <address> [--rpc <url>]');
+      if (!addr) fail('usage: lidex asset show <address> [--rpc <url>]');
       const one = await rpc(url, 'fs_asset', [String(addr)]);
       if (!one) fail(`${addr} is not registered with this network's asset registry`);
       out(JSON.stringify(one, null, 2));
@@ -471,7 +471,7 @@ const commands = {
         ? ['function createToken((string name,string symbol,uint8 decimals,uint256 initialSupply,uint256 maxSupply,bool mintable,bool burnable,bool transferRestricted,address supplyRecipient) p)']
         : ['function createCollection(string name,string symbol,string baseUri,uint256 maxSupply)']
     );
-    const name = String(args.name ?? 'Full Stop Asset');
+    const name = String(args.name ?? 'Lidex Asset');
     const symbol = String(args.symbol ?? 'FSA');
     let data;
     if (kind === 'token') {
@@ -554,14 +554,14 @@ async function main() {
   const args = parseArgs(argv);
   const name = String(args._[0] ?? 'help');
   const fn = commands[name];
-  if (!fn) fail(`unknown command "${name}" - try: fullstop help`);
+  if (!fn) fail(`unknown command "${name}" - try: lidex help`);
   await fn(args);
 }
 
 if (require.main === module) {
   // A usage or connectivity failure is one line; a stack is only noise unless
   // someone is debugging the CLI itself.
-  main().catch((err) => fail(process.env.FULLSTOP_DEBUG ? err.stack ?? err.message : err.message));
+  main().catch((err) => fail(process.env.LIDEX_DEBUG ? err.stack ?? err.message : err.message));
 }
 
 module.exports = { main, parseArgs, systemCall, SELECTORS, isWithinDirectory };

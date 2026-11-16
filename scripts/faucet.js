@@ -38,7 +38,7 @@ async function main() {
   const url = String(arg('rpc', RPC_DEFAULT));
   if (arg('help', false)) {
     process.stdout.write(
-      ['Full Stop testnet faucet client', '', '  --to <address>     the account to fund', '  --rpc <url>        node to ask (default http://127.0.0.1:7300)', '  --balance          show the faucet account and its remaining budget', '  --watch            wait for the claim transaction to land', ''].join('\n')
+      ['Lidex testnet faucet client', '', '  --to <address>     the account to fund', '  --rpc <url>        node to ask (default http://127.0.0.1:7300)', '  --balance          show the faucet account and its remaining budget', '  --watch            wait for the claim transaction to land', ''].join('\n')
     );
     return;
   }

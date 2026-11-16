@@ -1,0 +1,54 @@
+project:
+  scope_path: "."
+  loc: 11639
+  languages: [javascript]
+  git: true
+  modules: 1
+  structure:
+    src: "Node.js blockchain node and core protocol implementation"
+    scripts: "Local/devnet operational scripts"
+    tests: "Node.js test suite"
+    web: "Static wallet/network UI"
+    contracts: "EVM smart contracts"
+    docs: "Project documentation and operations guidance"
+    artifacts: "Generated benchmark and contract artifacts"
+    data: "Local chain state and data; preserve"
+    tools: "Project utilities"
+    .github/modernize/lidex-dual-network: "Approved testnet-only plan and task list"
+  notes: "Single in-place JavaScript/Node.js application. Existing worktree contains extensive user changes; preserve all. Execute only approved testnet-safe tasks from .github/modernize/lidex-dual-network/.metadata/tasks.json. No deployment, no mainnet activation or genesis/key/credential generation. FSC consensus safety is unproven (missing lock/lock-round safety and possible round-boundary fork); production mainnet is blocked pending independent human-led consensus/governance/security review."
+
+assessment:
+  change_type: upgrade
+  rationale: |
+    In-place, same-stack modernization and safety hardening of the existing
+    Node.js application, with no cross-stack migration or module extraction.
+    The requested scope is the approved isolated-testnet plan; mainnet startup,
+    deployment, genesis, credentials, consensus redesign, and production-readiness
+    claims are explicitly excluded.
+  transformations:
+    - fromStack: "JavaScript / Node.js (CommonJS), Express 5, static web UI"
+      fromStackVersion: "Node.js >= 20"
+      toStack: "JavaScript / Node.js (CommonJS), Express 5, static web UI"
+      toStackVersion: "Node.js >= 20"
+  grouping_needed: false
+  deep_planning: undecided
+
+progress_sync:
+  run_id: "31777aab-0113-4d09-ad2b-8f34fbd20ed0"
+  grouping_mode: none
+  execution_mode: pending
+  plan_start_time: "2026-11-14T18:05:54Z"
+  plan_completed_time: "2026-11-14T18:08:04Z"
+  execution_start_time: null
+  execution_completed_time: null
+  validation_start_time: null
+  validation_completed_time: null
+  total_phases: 10
+  completed_phases: 0
+  total_modules: 1
+  completed_modules: 0
+  total_tasks: 12
+  completed_tasks: 0
+  total_commits: null
+  build_verified: false
+  test_verified: false

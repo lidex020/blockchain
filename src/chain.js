@@ -28,10 +28,10 @@ const { Execution } = require('./execution');
 const { Protocol } = require('./protocol');
 const { Mempool } = require('./mempool');
 const { Store } = require('./store');
-const { FullStopBlock, ZERO_HASH, verifyVote, dataRoot, evidenceRoot } = require('./block');
+const { LidexBlock, ZERO_HASH, verifyVote, dataRoot, evidenceRoot } = require('./block');
 const { ExecutionError } = require('./execution.js');
 const { BLOCK, COIN, FEES, SYSTEM, VERSION, STAKING, COMMUNITY, ALLOCATIONS, CHAIN } = require('./constants');
-const { hashObject, merkleRoot, keccak256Bytes, stableStringify } = require('./crypto');
+const { hashObject, merkleRoot, keccak256Bytes } = require('./crypto');
 const { createLogger } = require('./logger');
 
 const log = createLogger('chain');
@@ -44,7 +44,7 @@ class Chain {
     this.genesis = genesis;
     this.params = params;
     this.chainId = BigInt(params.chainId);
-    this.blocks = new Map(); // height -> FullStopBlock
+    this.blocks = new Map(); // height -> LidexBlock
     this.blockIndex = new Map(); // hash -> height
     this.evmHeaders = new Map(); // height -> sealed EVM header fields
     this.receiptsByHeight = new Map();
@@ -61,6 +61,8 @@ class Chain {
     this.pendingEvidence = [];
     /** height -> commit that sealed that height (needed for the next block) */
     this.commits = new Map();
+    /** height -> validator set that was active when that height was committed */
+    this.commitSets = new Map();
     this.heightVotes = new Map(); // height -> {hash -> power}
     this._committedHooks = [];
   }
@@ -80,13 +82,21 @@ class Chain {
 
   async init() {
     let resume = false;
-    if (this.store && this.store.exists()) {
+    if (this.store && !this.store.isFresh) {
       const meta = this.store.meta();
-      if (meta && meta.chainId === String(this.chainId) && meta.genesisHash === genesisHash(this.genesis)) {
-        resume = true;
-      } else if (meta) {
-        throw new Error(`data directory ${this.store.dir} belongs to chain ${meta.chainId} (genesis ${meta.genesisHash}), not this one`);
+      if (!meta) {
+        throw new Error(
+          `existing chain store ${this.store.dir} has unreadable metadata. ` +
+          'Refusing genesis initialization; preserve the files and inspect only a separate copy.'
+        );
       }
+      if (meta.chainId !== String(this.chainId) || meta.genesisHash !== genesisHash(this.genesis)) {
+        throw new Error(
+          `existing chain store ${this.store.dir} belongs to chain ${meta.chainId} (genesis ${meta.genesisHash}), not this one. ` +
+          'Refusing recovery or genesis initialization; preserve the files and inspect only a separate copy.'
+        );
+      }
+      resume = true;
     }
 
     if (resume) {
@@ -118,7 +128,7 @@ class Chain {
     const validatorsHash = hashObject(
       this.protocol.staking.activeSet().map((v) => ({ op: v.operator, p: v.power.toString(), cs: v.consensusAddress }))
     );
-    const genesisBlock = FullStopBlock.fromJSON({
+    const genesisBlock = LidexBlock.fromJSON({
       header: {
         version: { app: VERSION.appVersion, block: '1' },
         chainId: String(this.chainId),
@@ -167,8 +177,9 @@ class Chain {
    * The state trie is not persisted, so recovery re-runs genesis and then every
    * block through the same execution path used for live consensus, comparing
    * the recomputed state root with the root recorded in each header. A log that
-   * was torn by a crash mid-write is repaired by dropping the trailing record;
-   * a log whose roots do not reproduce is a hard error, never a warning.
+   * was torn by a crash mid-write is a hard error, not an instruction to repair
+   * or discard history. Replay failures preserve both source logs; diagnosis
+   * must happen against a separate copy.
    */
   async _recover() {
     return this.withState(async () => this.__recoverInner());
@@ -192,7 +203,8 @@ class Chain {
     if (stateRoot !== genesisRecord.header.stateRoot) {
       throw new Error(
         `genesis state root mismatch on recovery: recomputed ${stateRoot} but the log claims ${genesisRecord.header.stateRoot}. ` +
-          'This node build does not reproduce this network\'s genesis - check the genesis file, the compiled system contracts and the protocol version.'
+          'This node build does not reproduce this network\'s genesis - check the genesis file, the compiled system contracts and the protocol version. ' +
+          'Preserve the original logs and diagnose only an isolated copy; do not delete, truncate or rewrite source history.'
       );
     }
     const audit = await this.protocol.supplyAudit(this.execution);
@@ -202,36 +214,43 @@ class Chain {
     this.headEvmBlock = evmGenesis;
     this.execution.headBlock = evmGenesis;
     this.evmHeaders.set(0, evmHeaderFields({ evmBlock: evmGenesis, stateRoot, gasUsed: 0n }));
-    this._register(FullStopBlock.fromJSON(genesisRecord), []);
+    this._register(LidexBlock.fromJSON(genesisRecord), []);
     this.stateRoot = stateRoot;
     this.appHash = genesisRecord.header.appHash;
     this.validatorsHash = genesisRecord.header.validatorsHash;
-    for (const rec of records) if (rec.commit) this.commits.set(Number(rec.header.height), rec.commit);
-
     const receipts = new Map(this.store.readReceipts().map((r) => [r.height, r.receipts]));
     let replayHeight = 0;
     for (const rec of records.slice(1)) {
-      const block = FullStopBlock.fromJSON(rec);
+      const block = LidexBlock.fromJSON(rec);
       // Heights must arrive one after another. An out-of-order log means the
       // directory was written by two processes (or edited), and re-executing
       // that would look like a state corruption in the protocol.
       if (block.height !== replayHeight + 1) {
         throw new Error(
           `block log is not ordered: height ${block.height} follows ${replayHeight} in ${this.store.blocksPath}. ` +
-            'This directory was written by more than one process; restore it from a peer or start from a fresh data directory.'
+            'This directory may have been written by more than one process. Preserve its logs and investigate a separate copy; do not reset or replace the source.'
         );
       }
       replayHeight = block.height;
+      const commitSet = this.currentCommitSet();
+      const lastCommit = this._checkLastCommit(block);
+      if (!lastCommit.ok) {
+        throw new Error(`invalid last commit while replaying height ${block.height}: ${lastCommit.reason}`);
+      }
+      const seal = this.validateCommit(block.commit, block, commitSet);
+      if (!seal.ok) {
+        throw new Error(`invalid block commit while replaying height ${block.height}: ${seal.reason}`);
+      }
       const outcome = await this._executeBlockUnqueued({ block, dryRun: false });
       const staleLog =
-        'This block log was written by a node build that derives state differently from this one. Before a network is live there is no migration: start from a fresh data directory (or delete blocks.jsonl and receipts.jsonl in it) instead of replaying.';
+        'This block log may have been written by a node build that derives state differently from this one. Preserve the original block and receipt logs; stop and diagnose using an isolated copy. Do not delete, truncate or rewrite source history.';
       if (outcome.stateRoot !== rec.header.stateRoot) {
         throw new Error(`state root mismatch while replaying height ${rec.header.height}: recomputed ${outcome.stateRoot}. ${staleLog}`);
       }
       if (outcome.appHash !== rec.header.appHash) {
         throw new Error(`app hash mismatch while replaying height ${rec.header.height}: recomputed ${outcome.appHash}. ${staleLog}`);
       }
-      await this._commit(block, outcome, { persist: false, source: 'replay' });
+      await this._commit(block, outcome, { persist: false, source: 'replay', commitSet });
     }
     for (const [h, list] of receipts) if (!this.receiptsByHeight.has(h)) this.receiptsByHeight.set(h, list);
     log.info('recovery complete', { height: this.head.height, ms: Date.now() - t0 });
@@ -288,6 +307,7 @@ class Chain {
     if (block.height !== this.head.height + 1) {
       throw new Error(`cannot execute block ${block.height}: head is ${this.head.height}`);
     }
+    const lastCommit = this._checkLastCommit(block);
     return this.execution._executeBlock({
       parentBlock: this.headEvmBlock,
       txs: block.txs.map((raw) => ({ raw })),
@@ -297,9 +317,9 @@ class Chain {
       evidence: block.evidence,
       dryRun,
       gasLimit: this.params.blockGasLimit,
-      // Whose precommits sealed the previous height. Derived from the block
-      // itself, so this is replayable, not a node-local observation.
-      lastCommitSigners: block.lastCommit?.votes?.map((v) => v.validator) ?? null,
+      // The embedded proof is used only after _checkLastCommit has verified
+      // that its quorum signed the canonical parent block.
+      lastCommitSigners: lastCommit.ok ? lastCommit.commit?.votes?.map((vote) => vote.validator) ?? null : null,
     });
   }
 
@@ -344,14 +364,14 @@ class Chain {
       gasLimit: this.params.blockGasLimit,
       lastCommit,
     };
-    const draft = FullStopBlock.assemble({
+    const draft = LidexBlock.assemble({
       ...draftOptions,
       stateRoot: ZERO_HASH,
       appHash: ZERO_HASH,
       validatorsHash: ZERO_HASH,
     });
     const outcome = await this._executeBlockUnqueued({ block: draft, dryRun: true });
-    const block = FullStopBlock.assemble({
+    const block = LidexBlock.assemble({
       ...draftOptions,
       stateRoot: outcome.stateRoot,
       appHash: outcome.appHash,
@@ -415,7 +435,7 @@ class Chain {
         return reject(block, `state root mismatch: proposer claimed ${block.header.stateRoot}, execution produced ${outcome.stateRoot}`);
       }
       if (outcome.appHash !== block.header.appHash) {
-        if (process.env.FULLSTOP_DEBUG_HASH_DIFF) {
+        if (process.env.LIDEX_DEBUG_HASH_DIFF) {
           const mine = this.protocol.serialize();
           fs.writeFileSync(`/tmp/mine-${block.height}.json`, JSON.stringify(mine, null, 1));
           log.warn('app hash mismatch', { height: block.height, mine: JSON.stringify(mine).slice(0, 2000) });
@@ -443,30 +463,23 @@ class Chain {
 
   _checkLastCommit(block, forSet) {
     const commit = block.lastCommit;
+    if (block.height === 1) {
+      if (!commit) return { ok: true }; // first block after genesis
+      return { ok: false, reason: 'first block after genesis must not include a last commit' };
+    }
     if (!commit) {
-      if (block.height === 1) return { ok: true }; // first block after genesis
       return { ok: false, reason: 'block is missing its last commit' };
     }
-    const set = forSet ?? this.currentCommitSet();
+    const parent = this.blocks.get(block.height - 1);
+    if (!parent || String(parent.hash).toLowerCase() !== String(block.header.parentHash).toLowerCase()) {
+      return { ok: false, reason: 'canonical parent block is unavailable or does not match' };
+    }
+    const set = forSet ?? this.commitSets.get(parent.height);
+    if (!set) return { ok: false, reason: `verified validator set is unavailable for parent height ${parent.height}` };
     if (!set.length) return { ok: false, reason: 'no validators to check the commit against' };
-    const totalPower = set.reduce((a, v) => a + v.power, 0n);
-    const quorum = totalPower * 2n / 3n + 1n;
-    let power = 0n;
-    const seen = new Set();
-    for (const vote of commit.votes ?? []) {
-      if (BigInt(vote.height) !== BigInt(block.height - 1)) continue;
-      const v = set.find((x) => normalize(x.operator) === normalize(vote.validator) || normalize(x.consensusAddress) === normalize(vote.validator));
-      if (!v) continue; // not in the set: contributes nothing
-      if (seen.has(v.operator)) continue;
-      if (vote.blockHash !== commit.blockHash) continue;
-      if (!verifyVote(vote, this.chainId)) return { ok: false, reason: `invalid signature from ${vote.validator}` };
-      seen.add(v.operator);
-      power += v.power;
-    }
-    if (power < quorum) {
-      return { ok: false, reason: `commit power ${power} below the 2/3 quorum ${quorum}` };
-    }
-    return { ok: true, power, quorum };
+    const verdict = this.validateCommit(commit, parent, set);
+    if (!verdict.ok) return { ok: false, reason: `invalid canonical parent commit: ${verdict.reason}` };
+    return { ...verdict, commit };
   }
 
   validateCommit(commit, block, forSet = this.protocol.staking.activeSet()) {
@@ -514,8 +527,9 @@ class Chain {
   async commitBlock(block, { source = 'consensus', commit = null, validate = true } = {}) {
     return this.withState(async () => {
       const seal = commit ?? block.commit;
+      const commitSet = this.currentCommitSet();
       if (source === 'consensus' || source === 'sync') {
-        const verdict = this.validateCommit(seal, block);
+        const verdict = this.validateCommit(seal, block, commitSet);
         if (!verdict.ok) throw new ExecutionError(`invalid block commit at height ${block.height}: ${verdict.reason}`, 'INVALID_COMMIT');
       }
       if (validate) {
@@ -523,12 +537,12 @@ class Chain {
         if (!verdict.ok) throw new ExecutionError(`invalid block at height ${block.height}: ${verdict.reason}`, 'INVALID_BLOCK');
       }
       const outcome = await this._executeBlockUnqueued({ block, dryRun: false });
-      await this._commit(block, outcome, { persist: true, source, commit: seal });
+      await this._commit(block, outcome, { persist: true, source, commit: seal, commitSet });
       return outcome;
     });
   }
 
-  async _commit(block, outcome, { persist, source, commit = null } = {}) {
+  async _commit(block, outcome, { persist, source, commit = null, commitSet = null } = {}) {
     // Self-check before anything is recorded: this node's own execution must
     // reproduce the header it is about to store. A node that cannot do that has
     // diverged from the network and must stop rather than serve wrong data.
@@ -546,8 +560,11 @@ class Chain {
         );
       }
     }
-    if (commit) this.commits.set(block.height, commit);
-    else if (block.commit) this.commits.set(block.height, block.commit);
+    const sealedCommit = commit ?? block.commit;
+    if (sealedCommit) {
+      this.commits.set(block.height, sealedCommit);
+      if (commitSet) this.commitSets.set(block.height, commitSet);
+    }
     this._register(block, outcome.receipts);
     this.evmHeaders.set(block.height, outcome.evmHeader ?? evmHeaderFields(outcome));
     this.head = block;

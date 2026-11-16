@@ -2,7 +2,7 @@
 /**
  * Execution layer.
  *
- * Wraps the EthereumJS VM and adds the Full Stop protocol transition.
+ * Wraps the EthereumJS VM and adds the Lidex protocol transition.
  *
  * How a block is executed (identically on every validator):
  *   1. open a state checkpoint;
@@ -59,7 +59,7 @@ class ExecutionError extends Error {
 
 /** The EIP-155 chain configuration shared by every component. */
 function createChainCommon(chainId, hardfork = POOL.hardfork) {
-  return createCustomCommon({ chainId: Number(chainId), name: 'fullstop' }, Mainnet, { hardfork });
+  return createCustomCommon({ chainId: Number(chainId), name: 'lidex' }, Mainnet, { hardfork });
 }
 
 const addr = (str) => createAddressFromString(str);
@@ -419,7 +419,7 @@ class Execution {
         restored = true;
         await this.stateManager.revert();
         protocol.restoreSnapshot(protocolSnapshot);
-        if (process.env.FULLSTOP_DEBUG_RESTORE) {
+        if (process.env.LIDEX_DEBUG_RESTORE) {
           const now = protocol.snapshotJSON();
           if (now !== protocolSnapshot) {
             let i = 0;
@@ -431,7 +431,7 @@ class Execution {
           }
         }
       };
-      const preRoot = process.env.FULLSTOP_DEBUG_RESTORE ? await this.stateRoot() : null;
+      const preRoot = process.env.LIDEX_DEBUG_RESTORE ? await this.stateRoot() : null;
       const commitState = async () => {
         restored = true;
         await this.stateManager.commit();
@@ -471,6 +471,11 @@ class Execution {
           ctxBlock,
           lastCommitSigners,
         });
+        const activeValidators = protocol.staking.activeSet().map((validator) => ({
+          operator: validator.operator,
+          consensusAddress: validator.consensusAddress,
+          power: validator.power.toString(),
+        }));
 
         const stateRoot = await this.stateRoot();
         const receiptRoots = await this.buildReceiptRoots(receipts);
@@ -487,7 +492,7 @@ class Execution {
           extraData: protocolResult.appHash,
         });
 
-        if (process.env.FULLSTOP_DEBUG_EXEC) {
+        if (process.env.LIDEX_DEBUG_EXEC) {
           require('fs').writeFileSync(`/tmp/exec-${this.debugTag}-${height}-${dryRun ? 'dry' : 'real'}.json`, JSON.stringify(protocol.serialize(), null, 1));
         }
         const fullReceipts = receipts.map((r, i) =>
@@ -508,6 +513,7 @@ class Execution {
           stateRoot,
           appHash: protocolResult.appHash,
           validatorsHash: protocolResult.validatorsHash,
+          activeValidators,
           feesCollected,
           protocol: protocolResult,
           receiptsRoot: receiptRoots.receiptsRoot,

@@ -19,6 +19,7 @@ const { createAddressFromString: createAddressLike } = require('@ethereumjs/util
 const { paramsFromGenesis } = require('./helpers.js');
 const { Chain } = require('../src/chain.js');
 const { Consensus } = require('../src/consensus.js');
+const { loadConfig } = require('../src/node.js');
 const { SYSTEM, FEES, REWARDS, BLOCK, COIN } = constants;
 
 const GENESIS = path.resolve(__dirname, '..', 'data', 'testnet', 'genesis.json');
@@ -61,6 +62,42 @@ async function mine(chain, proposer) {
 }
 
 async function run(suite) {
+  suite.describe('Consensus safety boundaries');
+
+  await suite.test('the production key loader preserves and selects a configured consensus key', async () => {
+    const datadir = fs.mkdtempSync(path.join(os.tmpdir(), 'lidex-consensus-key-'));
+    try {
+      const config = loadConfig({
+        genesis: GENESIS,
+        key: path.resolve(__dirname, '..', 'data', 'testnet', 'keys', 'v1.json'),
+        datadir,
+      });
+      assert(config.key?.consensusPrivateKey, 'loadConfig dropped the configured consensus private key');
+      assert(config.key.consensusPrivateKey !== config.key.privateKey, 'the fixture must exercise a distinct consensus key');
+      const consensus = new Consensus({ chain: { mode: 'validator' }, identity: config.key });
+      const signer = consensus._signer();
+      assert(signer.privateKey === config.key.consensusPrivateKey, 'consensus signer fell back to the operator private key');
+      assert(
+        signer.address.toLowerCase() === config.key.consensusAddress.toLowerCase(),
+        'consensus signer address does not match the configured consensus identity'
+      );
+
+      const incomplete = new Consensus({
+        chain: { mode: 'validator' },
+        identity: { ...config.key, consensusPrivateKey: '' },
+      });
+      let failedClosed = false;
+      try {
+        incomplete._signer();
+      } catch {
+        failedClosed = true;
+      }
+      assert(failedClosed, 'an explicitly configured but unusable consensus key fell back to the operator key');
+    } finally {
+      fs.rmSync(datadir, { recursive: true, force: true });
+    }
+  });
+
   // ------------------------------------------------------------ supply rules
   suite.describe('LDX supply rules');
 
@@ -866,8 +903,8 @@ async function run(suite) {
     const creator = account(GENESIS, 'user0');
     const factory = genesis.system_contracts.erc20_factory;
     const registry = genesis.system_contracts.asset_registry;
-    const factoryIface = new ethers.Interface(ARTIFACTS.FullStopERC20Factory.abi);
-    const registryIface = new ethers.Interface(ARTIFACTS.FullStopAssetRegistry.abi);
+    const factoryIface = new ethers.Interface(ARTIFACTS.LidexERC20Factory.abi);
+    const registryIface = new ethers.Interface(ARTIFACTS.LidexAssetRegistry.abi);
     const tokenIface = new ethers.Interface(ARTIFACTS.LDXERC20.abi);
     const params = {
       name: 'Community Coin',
@@ -915,8 +952,8 @@ async function run(suite) {
   await suite.test('NFT and multi-token creation work the same way', async () => {
     const { chain, genesis } = await solo();
     const creator = account(GENESIS, 'user1');
-    const nftIface = new ethers.Interface(ARTIFACTS.FullStopERC721Factory.abi);
-    const multiIface = new ethers.Interface(ARTIFACTS.FullStopERC1155Factory.abi);
+    const nftIface = new ethers.Interface(ARTIFACTS.LidexERC721Factory.abi);
+    const multiIface = new ethers.Interface(ARTIFACTS.LidexERC1155Factory.abi);
     const erc721 = new ethers.Interface(ARTIFACTS.LDXERC721.abi);
     const erc1155 = new ethers.Interface(ARTIFACTS.LDXERC1155.abi);
     let nonce = 0;
@@ -925,8 +962,8 @@ async function run(suite) {
         await creator.signTransaction({ to, data, gasLimit, gasPrice: BigInt(FEES.minGasPrice), nonce: nonce++, chainId: Number(genesis.chain_id) }),
         { gossip: false }
       );
-    await send(genesis.system_contracts.erc721_factory, nftIface.encodeFunctionData('createCollection', [{ name: 'Full Stop Punks', symbol: 'FSP', maxSupply: 100n, contractURI: 'ipfs://collection' }]));
-    await send(genesis.system_contracts.erc1155_factory, multiIface.encodeFunctionData('createCollection', ['Full Stop Passes', 'ipfs://meta/{id}.json']));
+    await send(genesis.system_contracts.erc721_factory, nftIface.encodeFunctionData('createCollection', [{ name: 'Lidex Punks', symbol: 'FSP', maxSupply: 100n, contractURI: 'ipfs://collection' }]));
+    await send(genesis.system_contracts.erc1155_factory, multiIface.encodeFunctionData('createCollection', ['Lidex Passes', 'ipfs://meta/{id}.json']));
     await mine(chain, creator.address);
     const receipts = chain.receiptsByHeight.get(1);
     assertEqual(receipts.length, 2, 'both creation transactions should be in the block');
@@ -1087,7 +1124,7 @@ async function run(suite) {
 
   await suite.test('the registry only accepts its approved factories, and ownership is not user-controlled', async () => {
     const { chain, genesis } = await solo();
-    const registryIface = new ethers.Interface(ARTIFACTS.FullStopAssetRegistry.abi);
+    const registryIface = new ethers.Interface(ARTIFACTS.LidexAssetRegistry.abi);
     const attacker = account(GENESIS, 'user3');
     await chain.pool.add(
       await attacker.signTransaction({

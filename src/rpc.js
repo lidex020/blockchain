@@ -171,7 +171,7 @@ class RpcServer {
         throw new RpcError(-32601, 'subscriptions are available over the WebSocket endpoint, not JSON-RPC');
       },
 
-      // ---- Full Stop protocol namespace ---------------------------------
+      // ---- Lidex protocol namespace ---------------------------------
       fs_status: async () => ({ ...chain.status(), consensus: this.consensus?.status() ?? null, peers: this.node?.peerStatus() ?? [] }),
       fs_genesis: async () => chain.genesis,
       /**
@@ -288,7 +288,7 @@ class RpcServer {
           address: acc.address,
           nonce: acc.nonce.toString(),
           balance: acc.balance.toString(),
-          balanceFstop: formatFstop(acc.balance),
+          balanceLdx: formatLdx(acc.balance),
           isContract: await ex.isContract(address),
           codeHash: acc.codeHash,
         };
@@ -451,7 +451,7 @@ class RpcServer {
       baseFeePerGas: '0x0',
       blobGasUsed: null,
       excessBlobGas: null,
-      // Full Stop specific fields, ignored by standard tooling.
+      // Lidex specific fields, ignored by standard tooling.
       fs: {
         appHash: h.appHash,
         proposer: h.proposer,
@@ -579,7 +579,7 @@ function mapValues(obj, fn) {
   return out;
 }
 
-function formatFstop(amount) {
+function formatLdx(amount) {
   return ethers.formatUnits(amount, COIN.decimals);
 }
 

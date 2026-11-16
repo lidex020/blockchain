@@ -73,7 +73,7 @@ confirmed, and the supply audit still balances afterwards.
 | Transactions per block | mean 17.9, max 32 | length of the transactions array per block |
 | Blocks produced | 52 over 90.6 s | heights observed inside the measured window |
 | Latency to inclusion | p50 3,191 ms, p95 4,487 ms, p99 4,623 ms, max 4,663 ms | submit -> first readable receipt, polled every 50 ms |
-| Finality | 1 block | a Full Stop block carries the precommits that sealed it, so a transaction is final in the block that includes it; there is no epoch to wait for |
+| Finality | 1 block | a Lidex block carries the precommits that sealed it, so a transaction is final in the block that includes it; there is no epoch to wait for |
 | Consensus rounds | p50 0, max 1, 98.1% of blocks committed at round 0 | header.round per block; round > 0 means a view change happened |
 | Cold node sync + replay | 58 blocks in 6.5 s = 9 blocks/s | an empty data directory, one peer, re-executed every block from genesis (the state trie is not persisted) |
 | Sync agreement | identical state root and app hash at height 58 | both nodes asked for the same height and their headers compared: heads are not comparable while the chain advances |

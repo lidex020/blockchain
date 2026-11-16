@@ -146,10 +146,10 @@
     "headroom": "24999994200000000000000000"
   },
   "status": {
-    "nodeVersion": "fullstop-node/0.1.0",
+    "nodeVersion": "lidex-node/0.1.0",
     "protocolVersion": "1",
     "chainId": "721220",
-    "chainName": "Full Stop Blockchain",
+    "chainName": "Lidex Blockchain",
     "height": 58,
     "blockHash": "0x9fbee9a22ba53f838ebc2b279e1f350a119ba18ad0137d333a11efc3b40f1364",
     "appHash": "0xeea5a1c397d16978b1569c1e80b186c1b8775aebe16eab00f9650959c1b68a09",
@@ -166,7 +166,7 @@
     },
     "validators": 4,
     "nativeCoin": {
-      "name": "Full Stop Coin",
+      "name": "Lidex Coin",
       "ticker": "LDX",
       "decimals": 18
     },

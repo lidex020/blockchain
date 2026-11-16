@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Cryptographic primitives used by the Full Stop protocol.
+ * Cryptographic primitives used by the Lidex protocol.
  *
  * Everything here is Ethereum-native: keccak256 hashing and secp256k1
  * signatures over the same digests wallets already produce, so a validator

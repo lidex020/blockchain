@@ -17,6 +17,7 @@ const WebSocket = require('ws');
 
 const { Suite, assert, assertEqual, toBase } = require('./helpers.js');
 const { SYSTEM, FEES } = require('../src/constants.js');
+const { loadPublicUrls } = require('../src/node.js');
 
 const { spawnSync } = require('child_process');
 
@@ -102,7 +103,7 @@ async function startNode(role, opts = {}) {
   const args = [path.join(ROOT, 'src', 'node.js'), '--genesis', GENESIS, '--datadir', dir, '--port', String(port), '--moniker', `test-${role}`];
   if (role === 'validator') args.push('--key', path.join(keyDir, `v${opts.validatorIndex ?? 1}.json`), '--faucet-key', path.join(keyDir, 'faucet.json'));
   if (opts.peers) args.push('--peers', opts.peers);
-  const child = spawn(process.execPath, args, { cwd: ROOT, env: { ...process.env, FULLSTOP_LOG_LEVEL: process.env.FULLSTOP_LOG_LEVEL ?? 'warn' } });
+  const child = spawn(process.execPath, args, { cwd: ROOT, env: { ...process.env, LIDEX_LOG_LEVEL: process.env.LIDEX_LOG_LEVEL ?? 'warn' } });
   let log = '';
   child.stdout.on('data', (d) => (log += d));
   child.stderr.on('data', (d) => (log += d));
@@ -133,6 +134,50 @@ async function run(suite) {
   const chainId = Number(genesis.chain_id);
   const keyOf = (rel) => JSON.parse(fs.readFileSync(path.join(NETDIR, rel), 'utf8')).privateKey;
   const alice = new ethers.Wallet(keyOf(accounts.users[0].key_file));
+
+  await suite.test('validates HTTPS and WSS public endpoint configuration', async () => {
+    const mainnet = loadPublicUrls({
+      LIDEX_PUBLIC_RPC_URL: 'https://rpc.lidex.tech',
+      LIDEX_PUBLIC_WS_URL: 'wss://ws.lidex.tech/ws',
+      LIDEX_EXPLORER_URL: 'https://explorer.lidex.tech',
+    }, 'mainnet');
+    assertEqual(mainnet.rpc, 'https://rpc.lidex.tech', 'Mainnet RPC URL');
+    assertEqual(mainnet.ws, 'wss://ws.lidex.tech/ws', 'Mainnet WebSocket URL');
+
+    const urls = loadPublicUrls({
+      LIDEX_PUBLIC_RPC_URL: 'https://testnet-rpc.lidex.tech',
+      LIDEX_PUBLIC_WS_URL: 'wss://testnet-rpc.lidex.tech/ws',
+      LIDEX_EXPLORER_URL: 'https://testnet.lidex.tech',
+    }, 'testnet');
+    assertEqual(urls.rpc, 'https://testnet-rpc.lidex.tech', 'public RPC URL');
+    assertEqual(urls.ws, 'wss://testnet-rpc.lidex.tech/ws', 'public WebSocket URL');
+    assertEqual(urls.explorer, 'https://testnet.lidex.tech', 'public explorer URL');
+    let rejected = false;
+    try {
+      loadPublicUrls({
+        LIDEX_PUBLIC_RPC_URL: 'https://rpc.lidex.tech',
+        LIDEX_PUBLIC_WS_URL: 'wss://ws.lidex.tech/ws',
+        LIDEX_EXPLORER_URL: 'https://explorer.lidex.tech',
+      }, 'testnet');
+    } catch (error) {
+      rejected = /does not belong to the configured testnet domain/.test(error.message);
+    }
+    assert(rejected, 'Mainnet domains must not be advertised by Testnet');
+    let insecureRejected = false;
+    try {
+      loadPublicUrls({ LIDEX_PUBLIC_RPC_URL: 'http://rpc.lidex.tech' });
+    } catch (error) {
+      insecureRejected = /must be an absolute https:\/\//.test(error.message);
+    }
+    assert(insecureRejected, 'insecure public RPC URL must be rejected');
+    let devnetRejected = false;
+    try {
+      loadPublicUrls({ LIDEX_PUBLIC_RPC_URL: 'https://testnet-rpc.lidex.tech' }, 'devnet');
+    } catch (error) {
+      devnetRejected = /devnet must not advertise production/.test(error.message);
+    }
+    assert(devnetRejected, 'devnet must not advertise a production endpoint');
+  });
 
   let node = await startNode('validator');
   let url = node.url;
@@ -348,20 +393,25 @@ async function run(suite) {
       assertEqual(descriptor.currency.name, 'Lidex Coin', 'currency name');
       assertEqual(descriptor.currency.decimals, 18, 'currency decimals');
       assert(descriptor.currency.name, 'currency name');
+      const forwarded = await (await fetch(url.replace(/\/$/, '') + '/network.json', {
+        headers: { 'x-forwarded-proto': 'https' },
+      })).json();
+      assertEqual(forwarded.rpcUrl, url.replace(/^http:/, 'https:').replace(/\/$/, ''), 'reverse-proxy HTTPS RPC URL');
+      assertEqual(forwarded.wsUrl, url.replace(/^http:/, 'wss:').replace(/\/$/, '') + '/ws', 'reverse-proxy WSS URL');
     });
 
     await suite.test('the node serves asset factory ABIs for older genesis files', async () => {
       const res = await fetch(url.replace(/\/$/, '') + '/contract-abis.json');
       assertEqual(res.status, 200, 'compiled contract ABIs not served');
       const { abis } = await res.json();
-      for (const name of ['FullStopERC20Factory', 'FullStopERC721Factory', 'FullStopERC1155Factory']) {
+      for (const name of ['LidexERC20Factory', 'LidexERC721Factory', 'LidexERC1155Factory']) {
         assert(Array.isArray(abis[name]), `missing ABI for ${name}`);
       }
       assert(
-        abis.FullStopERC20Factory.some((entry) => entry.type === 'function' && entry.name === 'createToken'),
+        abis.LidexERC20Factory.some((entry) => entry.type === 'function' && entry.name === 'createToken'),
         'ERC-20 factory ABI is incomplete'
       );
-      for (const name of ['FullStopERC721Factory', 'FullStopERC1155Factory']) {
+      for (const name of ['LidexERC721Factory', 'LidexERC1155Factory']) {
         assert(abis[name].some((entry) => entry.type === 'function' && entry.name === 'createCollection'), `${name} ABI is incomplete`);
       }
     });
@@ -437,7 +487,7 @@ async function run(suite) {
       const genesis = await call(url, 'fs_genesis');
       const factory = genesis.system_contracts.erc20_factory;
       assert(factory, 'this network was generated without the erc20 factory');
-      const abi = ART.FullStopERC20Factory.abi;
+      const abi = ART.LidexERC20Factory.abi;
       const iface = new ethers.Interface(abi);
       const empty = await call(url, 'fs_assets', [{}]);
       assert(Array.isArray(empty.assets), 'fs_assets returns a page');
@@ -479,7 +529,7 @@ async function run(suite) {
       assertEqual(one.symbol, 'FRPC', 'fs_asset reads the same record');
       // and the same data is readable without the node's help, which is what a
       // wallet actually does: the rpc view is a convenience, not a source of truth
-      const direct = await call(url, 'eth_call', [{ to: genesis.system_contracts.asset_registry, data: new ethers.Interface(ART.FullStopAssetRegistry.abi).encodeFunctionData('assetCount', []) }]);
+      const direct = await call(url, 'eth_call', [{ to: genesis.system_contracts.asset_registry, data: new ethers.Interface(ART.LidexAssetRegistry.abi).encodeFunctionData('assetCount', []) }]);
       assertEqual(BigInt(direct), before + 1n, 'assetCount agrees with fs_assets');
       const unknown = await call(url, 'fs_asset', [ethers.Wallet.createRandom().address]);
       assertEqual(unknown, null, 'an unregistered contract reports null, not an empty object');

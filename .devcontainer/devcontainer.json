@@ -1,0 +1,17 @@
+{
+  "name": "LIDEX CometBFT ABCI++ (pinned)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "root",
+  "forwardPorts": [26658],
+  "containerEnv": {
+    "GOTOOLCHAIN": "local"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.Go"]
+    }
+  }
+}

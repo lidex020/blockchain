@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Genesis document: the approved starting state of a Full Stop network.
+ * Genesis document: the approved starting state of a Lidex network.
  *
  * The genesis file is consensus-critical. Everything a validator needs in
  * order to reach the same initial state lives here, and `validateGenesis()`
@@ -13,7 +13,7 @@ const { ethers } = require('ethers');
 const { CHAIN, COIN, BLOCK, FEES, REWARDS, STAKING, ALLOCATIONS, COMMUNITY, SYSTEM, POOL, VERSION } = require('./constants');
 const { hashObject } = require('./crypto');
 
-const GENESIS_SCHEMA = 'fullstop-genesis-v1';
+const GENESIS_SCHEMA = 'lidex-genesis-v1';
 
 /** Convert a decimal LDX amount to the base unit. */
 function toBase(units) {

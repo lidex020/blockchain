@@ -5,7 +5,7 @@
 **Mainnet is not ready. Do not launch a network with value.** The current node
 uses the custom `src/consensus.js` engine, which explicitly lacks lock/lock-round
 safety. Startup rejects a genesis marked `mainnet`; do not remove or bypass that
-guard. CometBFT/ABCI++ is not yet wired to FullStop execution and persistence.
+guard. CometBFT/ABCI++ is not yet wired to Lidex execution and persistence.
 
 The development bootstrap (`scripts/init-devnet.js`) writes test keys in
 plaintext. Those keys and the existing devnet genesis are not production
@@ -17,7 +17,7 @@ Keep these key roles separate:
 
 | Key role | Current handling | Production requirement |
 |---|---|---|
-| Consensus signing key | Used by the custom consensus implementation; current key loading accepts private key material in a JSON file | CometBFT validator key must be held by an isolated remote signer or HSM; the FullStop application must never receive or log the private key |
+| Consensus signing key | Used by the custom consensus implementation; current key loading accepts private key material in a JSON file | CometBFT validator key must be held by an isolated remote signer or HSM; the Lidex application must never receive or log the private key |
 | Operator / staking identity | Loaded through `src/keys.js` and used by application features | Define a separate custody and recovery policy; do not reuse the consensus key |
 | User transaction keys | Wallet/user responsibility | Never collect or persist user private keys in the validator process |
 
@@ -90,7 +90,7 @@ Before any launch, operators need reviewed procedures for:
 
 Do not enable mainnet startup until every item has reviewed evidence:
 
-- CometBFT owns consensus and P2P; FullStop execution is connected through a
+- CometBFT owns consensus and P2P; Lidex execution is connected through a
   deterministic ABCI++ application, with no fallback to the custom engine.
 - Remote signer/HSM custody has passed key-isolation, failure, restart, and
   double-sign prevention tests.
