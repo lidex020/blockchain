@@ -1,5 +1,5 @@
 window.LIDEX_COMMUNITY_LINKS = Object.freeze({
-  telegram: 'https://t.me/lidexOfficial',
+  telegram: 'https://t.me/lidexblockchain',
   x: 'https://x.com/lidexOfficial',
   linkedin: 'https://www.linkedin.com/company/lidexblockchain/',
   youtube: 'https://youtube.com/@lidexblockchain?si=IMOkbwd-5myFp99q',
