@@ -44,7 +44,7 @@ async function run(suite) {
     } catch (caught) {
       error = caught;
     }
-    assert(error && /mainnet startup is disabled/.test(error.message), 'unsupported mainnet configuration was not rejected');
+    assert(error && /Mainnet must be started via the CometBFT ABCI application/.test(error.message), 'unsupported mainnet configuration was not rejected');
     assertSupportedNetwork({ network: 'devnet' });
   });
 }

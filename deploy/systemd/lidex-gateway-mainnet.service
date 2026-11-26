@@ -1,0 +1,40 @@
+# Systemd unit: LIDEX public API gateway for public Mainnet.
+#
+# Single public-facing process for Mainnet. Forwards ONLY the public surface
+# to the loopback ABCI RPC backend and fails closed for everything else.
+#
+# PREPARATION ONLY. Not activated until mainnet-deploy.sh is run with
+# explicit authorization.
+
+[Unit]
+Description=LIDEX public API gateway (Mainnet)
+After=network.target lidex-abci-mainnet.service
+Wants=network.target
+Requires=lidex-abci-mainnet.service
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=mainnet
+Environment=LIDEX_GATEWAY_PORT=8081
+Environment=LIDEX_GATEWAY_HOST=127.0.0.1
+Environment=LIDEX_GATEWAY_BACKEND=http://127.0.0.1:7301
+# Allowed browser origins (operator-provided: lidex.tech subdomains).
+Environment=LIDEX_CORS_ORIGINS=https://lidex.tech,https://explorer.lidex.tech,https://rpc.lidex.tech,https://ws.lidex.tech
+Environment=LIDEX_GATEWAY_RATE_LIMIT=1200
+ExecStart=/usr/bin/node /workspaces/lidex/src/gateway.js \
+  --backend ${LIDEX_GATEWAY_BACKEND} \
+  --port ${LIDEX_GATEWAY_PORT} \
+  --host ${LIDEX_GATEWAY_HOST} \
+  --network ${LIDEX_NETWORK} \
+  --cors-origin ${LIDEX_CORS_ORIGINS} \
+  --rate-limit ${LIDEX_GATEWAY_RATE_LIMIT}
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

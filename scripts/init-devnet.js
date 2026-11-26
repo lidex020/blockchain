@@ -13,6 +13,11 @@
  *
  * Usage:
  *   node scripts/init-devnet.js --validators 4 --out data/devnet
+ *
+ * The network-generation core lives in `createNetwork()` so the public
+ * testnet bootstrap (scripts/init-testnet.js) can reuse the exact same
+ * genesis construction with network=testnet and an explicitly approved
+ * chain id, instead of duplicating it.
  */
 
 const fs = require('fs');
@@ -36,15 +41,44 @@ function flag(name) {
   return process.argv.includes(`--${name}`);
 }
 
-function main() {
-  const validatorCount = Number(arg('validators', '4'));
-  const outDir = path.resolve(arg('out', path.join(__dirname, '..', 'data', 'devnet')));
-  const chainId = BigInt(arg('chain-id', String(CHAIN.testnetChainId)));
-  const networkName = arg('name', 'Lidex Devnet');
-  const blockTime = Number(arg('block-time', String(BLOCK.targetBlockTimeMs)));
-  const unbonding = Number(arg('unbonding-blocks', '40'));
-  const distribution = Number(arg('distribution-interval', '20'));
-  const roundBlocks = Number(arg('community-round-blocks', '80'));
+/**
+ * Create a complete test network directory: genesis.json, accounts.json and
+ * plaintext test keys under keys/.
+ *
+ * @param {object} opts
+ * @param {string} opts.outDir output directory (created if missing)
+ * @param {number} [opts.validators=4] validator count
+ * @param {bigint|number|string} [opts.chainId] EIP-155 chain id (default: devnet id)
+ * @param {string} [opts.networkName='Lidex Devnet'] display name
+ * @param {string} [opts.network='devnet'] genesis network field
+ * @param {number} [opts.blockTime] block time ms
+ * @param {number} [opts.unbondingBlocks=40]
+ * @param {number} [opts.distributionInterval=20]
+ * @param {number} [opts.communityRoundBlocks=80]
+ * @param {string|null} [opts.seed] deterministic test-key seed (local fixtures only)
+ * @param {string} [opts.validatorStake='5000'] self-bond per validator, whole LDX
+ * @param {string} [opts.faucetBudget='200000'] faucet budget, whole LDX
+ * @param {string} [opts.genesisTime] explicit genesis_time ISO string (default: now)
+ * @param {boolean} [opts.faucetEnabled=true] enable the faucet (false for mainnet)
+ * @param {boolean} [opts.quiet=false] suppress stdout summary
+ * @returns {Promise<{genesisPath:string, genesis:object, validators:object[], accounts:object}>}
+ */
+async function createNetwork(opts = {}) {
+  const validatorCount = Number(opts.validators ?? 4);
+  if (!Number.isInteger(validatorCount) || validatorCount < 1 || validatorCount > 64) {
+    throw new Error(`validator count must be an integer in [1, 64], got ${opts.validators}`);
+  }
+  const outDir = path.resolve(opts.outDir ?? path.join(__dirname, '..', 'data', 'devnet'));
+  const chainId = BigInt(opts.chainId ?? CHAIN.devnetChainId);
+  const networkName = opts.networkName ?? 'Lidex Devnet';
+  const network = opts.network ?? 'devnet';
+  const blockTime = Number(opts.blockTime ?? BLOCK.targetBlockTimeMs);
+  const unbonding = Number(opts.unbondingBlocks ?? 40);
+  const distribution = Number(opts.distributionInterval ?? 20);
+  const roundBlocks = Number(opts.communityRoundBlocks ?? 80);
+  const validatorStake = String(opts.validatorStake ?? '5000');
+  const faucetBudget = String(opts.faucetBudget ?? '200000');
+  const faucetEnabled = opts.faucetEnabled ?? true;
   const artifacts = JSON.parse(fs.readFileSync(ARTIFACTS, 'utf8')).artifacts;
 
   fs.mkdirSync(outDir, { recursive: true });
@@ -52,7 +86,7 @@ function main() {
   fs.mkdirSync(keyDir, { recursive: true });
 
   // ---- identities --------------------------------------------------------
-  const deterministicSeed = arg('seed', null);
+  const deterministicSeed = opts.seed ?? null;
   const mk = (label) => {
     if (deterministicSeed) {
       const pk = ethers.keccak256(ethers.toUtf8Bytes(`${deterministicSeed}:${label}`));
@@ -84,8 +118,8 @@ function main() {
     validators.push({
       address: operator.address,
       consensus_address: consensus.address,
-      moniker: `devnet-validator-${i}`,
-      self_stake: toBase(arg('validator-stake', '5000')).toString(),
+      moniker: `${network === 'testnet' ? 'testnet' : 'devnet'}-validator-${i}`,
+      self_stake: toBase(validatorStake).toString(),
       commission_bps: '1000',
       website: `https://example.invalid/validator-${i}`,
       files: { validator: `keys/v${i}.json`, operator: `keys/v${i}-operator.json`, consensus: `keys/v${i}-consensus.json` },
@@ -147,143 +181,142 @@ function main() {
     ['LidexERC1155Factory', erc1155Factory, deployData('LidexERC1155Factory', [registry]), 8_000_000n],
   ];
 
-  const runAsync = async () => {
-    for (const [, expectedAddress, data, gas] of jobs) {
-      const signed = await send(null, data, 0n, gas);
-      const created = ethers.getCreateAddress({ from: deployer.address, nonce: signed.nonce });
-      if (created.toLowerCase() !== expectedAddress.toLowerCase()) {
-        throw new Error(`genesis deployment address drift: expected ${expectedAddress} at nonce ${signed.nonce}, got ${created}`);
-      }
+  for (const [, expectedAddress, data, gas] of jobs) {
+    const signed = await send(null, data, 0n, gas);
+    const created = ethers.getCreateAddress({ from: deployer.address, nonce: signed.nonce });
+    if (created.toLowerCase() !== expectedAddress.toLowerCase()) {
+      throw new Error(`genesis deployment address drift: expected ${expectedAddress} at nonce ${signed.nonce}, got ${created}`);
     }
-    // Freeze the factory set: the registry's owner becomes the protocol module
-    // account, which has no private key.
-    await send(registry, registryIface.encodeFunctionData('transferOwnership', [SYSTEM.moduleAddress]), 0n, 500_000n);
-    return txs;
+  }
+  // Freeze the factory set: the registry's owner becomes the protocol module
+  // account, which has no private key.
+  await send(registry, registryIface.encodeFunctionData('transferOwnership', [SYSTEM.moduleAddress]), 0n, 500_000n);
+
+  // ---- allocation ------------------------------------------------------
+  const maxSupply = COIN.maxSupply;
+  const alloc = [];
+
+  const fund = (address, amountUnits, source, label, note) => {
+    alloc.push({
+      address,
+      balance: toBase(amountUnits).toString(),
+      source: source ? { pool: source, reason: note ?? 'genesis distribution' } : null,
+      label: label ?? null,
+      note: note ?? null,
+    });
   };
 
-  return runAsync().then(() => {
-    // ---- allocation ------------------------------------------------------
-    const maxSupply = COIN.maxSupply;
-    const alloc = [];
+  // The genesis deployer pays gas for the system contract deployment, so it
+  // is funded from the ecosystem pool - every coin still traces to a pool.
+  fund(deployer.address, '2', 'developers', 'genesis deployer', 'gas for system contract deployment at genesis');
+  for (const v of validators) {
+    fund(v.address, ethers.formatUnits(v.self_stake, COIN.decimals), 'developers', `validator ${v.moniker} operator`, 'testnet bootstrap self-bond');
+  }
+  for (const u of users) fund(u.address, '2500', 'community', `test account ${u.label}`, 'testnet funds for functional testing');
+  // Reviewers pay gas to vote on claims, so a devnet whose reviewers are empty
+  // cannot exercise the review path at all. Fund them like any other test
+  // account and say so in accounts.json below.
+  for (const r of reviewers) fund(r.address, '500', 'community', `reviewer ${r.label}`, 'gas funds so claims can be reviewed on a devnet');
+  fund(faucet.address, faucetBudget, 'community', 'testnet faucet', 'testnet faucet budget');
 
-    const fund = (address, amountUnits, source, label, note) => {
-      alloc.push({
-        address,
-        balance: toBase(amountUnits).toString(),
-        source: source ? { pool: source, reason: note ?? 'genesis distribution' } : null,
-        label: label ?? null,
-        note: note ?? null,
-      });
-    };
-
-    // The genesis deployer pays gas for the system contract deployment, so it
-    // is funded from the ecosystem pool - every coin still traces to a pool.
-    fund(deployer.address, '2', 'developers', 'genesis deployer', 'gas for system contract deployment at genesis');
-    for (const v of validators) {
-      fund(v.address, ethers.formatUnits(v.self_stake, COIN.decimals), 'developers', `validator ${v.moniker} operator`, 'testnet bootstrap self-bond');
-    }
-    for (const u of users) fund(u.address, '2500', 'community', `test account ${u.label}`, 'testnet funds for functional testing');
-    // Reviewers pay gas to vote on claims, so a devnet whose reviewers are empty
-    // cannot exercise the review path at all. Fund them like any other test
-    // account and say so in accounts.json below.
-    for (const r of reviewers) fund(r.address, '500', 'community', `reviewer ${r.label}`, 'gas funds so claims can be reviewed on a devnet');
-    fund(faucet.address, arg('faucet-budget', '200000'), 'community', 'testnet faucet', 'testnet faucet budget');
-
-    const genesis = {
-      schema: GENESIS_SCHEMA,
-      chain_id: String(chainId),
-      name: networkName,
-      network: arg('network', 'devnet'),
-      genesis_time: new Date(Date.now() - (Date.now() % 1000)).toISOString(),
-      software: VERSION.software,
-      documentation:
-        'This genesis file is generated by scripts/init-devnet.js. It is a test network: the LDX in it has no value and the keys are published on this machine.',
-      protocol: {
-        hardfork: 'shanghai',
-        max_supply: maxSupply.toString(),
-        initial_issuance: toBase('75000000').toString(),
-        allocations: serializedAllocations(),
-        block_subsidy: (10n ** 17n).toString(),
-        burn_bps: FEES.burnBps.toString(),
-        validator_fee_bps: FEES.validatorFeeBps.toString(),
-        min_gas_price: FEES.minGasPrice.toString(),
-        block_gas_limit: BLOCK.blockGasLimit.toString(),
-        max_block_txs: BLOCK.maxBlockTxs,
-        staking: {
-          min_self_stake: STAKING.minSelfStake.toString(),
-          min_delegation: STAKING.minDelegation.toString(),
-          unbonding_blocks: unbonding,
-          max_commission_bps: STAKING.maxCommissionBps.toString(),
-          max_active_validators: STAKING.maxActiveValidators,
-          reward_distribution_interval: distribution,
-          downtime_window: 30,
-          double_sign_slash_bps: '2000',
-          downtime_slash_bps: '100',
-          jail_duration_blocks: 30,
-        },
-        community: {
-          round_blocks: roundBlocks,
-          round_budget: toBase('500').toString(),
-          max_per_address_per_round: toBase('50').toString(),
-          approval_quorum: 2,
-        },
-        rewards: { pool_share_bps: '2500', bps_denominator: '10000' },
+  const genesis = {
+    schema: GENESIS_SCHEMA,
+    chain_id: String(chainId),
+    name: networkName,
+    network,
+    genesis_time: opts.genesisTime ?? new Date(Date.now() - (Date.now() % 1000)).toISOString(),
+    software: VERSION.software,
+    documentation:
+      'This genesis file is generated by scripts/init-devnet.js. It is a test network: the LDX in it has no value and the keys are published on this machine.',
+    protocol: {
+      hardfork: 'shanghai',
+      max_supply: maxSupply.toString(),
+      initial_issuance: toBase('75000000').toString(),
+      allocations: serializedAllocations(),
+      block_subsidy: (10n ** 17n).toString(),
+      burn_bps: FEES.burnBps.toString(),
+      validator_fee_bps: FEES.validatorFeeBps.toString(),
+      min_gas_price: FEES.minGasPrice.toString(),
+      block_gas_limit: BLOCK.blockGasLimit.toString(),
+      max_block_txs: BLOCK.maxBlockTxs,
+      staking: {
+        min_self_stake: STAKING.minSelfStake.toString(),
+        min_delegation: STAKING.minDelegation.toString(),
+        unbonding_blocks: unbonding,
+        max_commission_bps: STAKING.maxCommissionBps.toString(),
+        max_active_validators: STAKING.maxActiveValidators,
+        reward_distribution_interval: distribution,
+        downtime_window: 30,
+        double_sign_slash_bps: '2000',
+        downtime_slash_bps: '100',
+        jail_duration_blocks: 30,
       },
-      alloc,
-      validators: validators.map((v) => ({
-        address: v.address,
-        consensus_address: v.consensus_address,
-        moniker: v.moniker,
-        self_stake: v.self_stake,
-        commission_bps: v.commission_bps,
-        website: v.website,
-      })),
-      reviewers: reviewers.map((r) => ({ address: r.address, label: r.label })),
-      system_contracts: {
-        asset_registry: registry,
-        erc20_factory: erc20Factory,
-        erc721_factory: erc721Factory,
-        erc1155_factory: erc1155Factory,
-        protocol_module: SYSTEM.moduleAddress,
-        community_pool: SYSTEM.communityPoolAddress,
-        validator_reward_pool: SYSTEM.validatorPoolAddress,
-        vesting: SYSTEM.vestingAddress,
-        fee_collector: SYSTEM.feeCollectorAddress,
+      community: {
+        round_blocks: roundBlocks,
+        round_budget: toBase('500').toString(),
+        max_per_address_per_round: toBase('50').toString(),
+        approval_quorum: 2,
       },
-      genesis_txs: txs,
-      contract_artifacts: Object.fromEntries(
-        Object.entries(artifacts).map(([name, a]) => [name, { source: a.source, deployedCodeHash: a.deployedCodeHash, abi: a.abi }])
-      ),
-      consensus: {
-        block_time_ms: blockTime,
-        min_block_interval_ms: Math.max(100, Math.floor(blockTime / 3)),
-        double_sign_window_blocks: 100_000,
-        algorithm: 'FSC/0.1 - round-based BFT over a staked validator set (see docs/ADR.md)',
-      },
-      faucet: {
-        enabled: true,
-        address: faucet.address,
-        key_file: 'keys/faucet.json',
-        amount: toBase('25').toString(),
-        cooldown_ms: 60_000,
-        budget: toBase('200000').toString(),
-        note: 'testnet only: hands out coin from a funded faucet account as an ordinary transfer, never by minting',
-      },
-    };
+      rewards: { pool_share_bps: '2500', bps_denominator: '10000' },
+    },
+    alloc,
+    validators: validators.map((v) => ({
+      address: v.address,
+      consensus_address: v.consensus_address,
+      moniker: v.moniker,
+      self_stake: v.self_stake,
+      commission_bps: v.commission_bps,
+      website: v.website,
+    })),
+    reviewers: reviewers.map((r) => ({ address: r.address, label: r.label })),
+    system_contracts: {
+      asset_registry: registry,
+      erc20_factory: erc20Factory,
+      erc721_factory: erc721Factory,
+      erc1155_factory: erc1155Factory,
+      protocol_module: SYSTEM.moduleAddress,
+      community_pool: SYSTEM.communityPoolAddress,
+      validator_reward_pool: SYSTEM.validatorPoolAddress,
+      vesting: SYSTEM.vestingAddress,
+      fee_collector: SYSTEM.feeCollectorAddress,
+    },
+    genesis_txs: txs,
+    contract_artifacts: Object.fromEntries(
+      Object.entries(artifacts).map(([name, a]) => [name, { source: a.source, deployedCodeHash: a.deployedCodeHash, abi: a.abi }])
+    ),
+    consensus: {
+      block_time_ms: blockTime,
+      min_block_interval_ms: Math.max(100, Math.floor(blockTime / 3)),
+      double_sign_window_blocks: 100_000,
+      algorithm: 'FSC/0.1 - round-based BFT over a staked validator set (see docs/ADR.md)',
+    },
+    faucet: {
+      enabled: faucetEnabled,
+      address: faucet.address,
+      key_file: 'keys/faucet.json',
+      amount: toBase('25').toString(),
+      cooldown_ms: 60_000,
+      budget: toBase(faucetBudget).toString(),
+      note: faucetEnabled
+        ? 'testnet only: hands out coin from a funded faucet account as an ordinary transfer, never by minting'
+        : 'disabled: mainnet genesis has no faucet',
+    },
+  };
 
-    const genesisPath = path.join(outDir, 'genesis.json');
-    fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
+  const genesisPath = path.join(outDir, 'genesis.json');
+  fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
 
-    const accounts = {
-      warning: 'TEST KEYS ONLY - this file is generated for a local devnet and is git-ignored. Never send anything of value to these addresses.',
-      deployer: { address: deployer.address, key_file: 'keys/genesis-deployer.json' },
-      faucet: { address: faucet.address, key_file: 'keys/faucet.json' },
-      reviewers: reviewers.map((r) => ({ address: r.address, key_file: `keys/${r.label}.json` })),
-      users: users.map((u) => ({ address: u.address, key_file: `keys/${u.label}.json` })),
-      validators: validators.map((v) => ({ moniker: v.moniker, operator: v.address, node_key_file: v.files.validator, operator_key_file: v.files.operator, consensus_key_file: v.files.consensus })),
-    };
-    fs.writeFileSync(path.join(outDir, 'accounts.json'), JSON.stringify(accounts, null, 2));
+  const accounts = {
+    warning: 'TEST KEYS ONLY - this file is generated for a local devnet and is git-ignored. Never send anything of value to these addresses.',
+    deployer: { address: deployer.address, key_file: 'keys/genesis-deployer.json' },
+    faucet: { address: faucet.address, key_file: 'keys/faucet.json' },
+    reviewers: reviewers.map((r) => ({ address: r.address, key_file: `keys/${r.label}.json` })),
+    users: users.map((u) => ({ address: u.address, key_file: `keys/${u.label}.json` })),
+    validators: validators.map((v) => ({ moniker: v.moniker, operator: v.address, node_key_file: v.files.validator, operator_key_file: v.files.operator, consensus_key_file: v.files.consensus })),
+  };
+  fs.writeFileSync(path.join(outDir, 'accounts.json'), JSON.stringify(accounts, null, 2));
 
+  if (!opts.quiet) {
     process.stdout.write(
       [
         `wrote ${genesisPath}`,
@@ -292,12 +325,27 @@ function main() {
         `asset registry  ${registry}`,
         `erc20 factory   ${erc20Factory}`,
         `genesis hash    ${ethers.hexlify(keccak256(ethers.toUtf8Bytes(JSON.stringify(genesis)))).slice(0, 18)}...`,
-        flag('quiet') ? '' : JSON.stringify({ genesisPath, validators: validators.map((v) => v.address) }, null, 2),
-      ]
-        .filter(Boolean)
-        .join('\n') + '\n'
+      ].join('\n') + '\n'
     );
-    return { genesisPath, genesis, validators, accounts };
+  }
+  return { genesisPath, genesis, validators, accounts };
+}
+
+async function main() {
+  return createNetwork({
+    validators: Number(arg('validators', '4')),
+    outDir: path.resolve(arg('out', path.join(__dirname, '..', 'data', 'devnet'))),
+    chainId: BigInt(arg('chain-id', String(CHAIN.devnetChainId))),
+    networkName: arg('name', 'Lidex Devnet'),
+    network: arg('network', 'devnet'),
+    blockTime: Number(arg('block-time', String(BLOCK.targetBlockTimeMs))),
+    unbondingBlocks: Number(arg('unbonding-blocks', '40')),
+    distributionInterval: Number(arg('distribution-interval', '20')),
+    communityRoundBlocks: Number(arg('community-round-blocks', '80')),
+    seed: arg('seed', null),
+    validatorStake: arg('validator-stake', '5000'),
+    faucetBudget: arg('faucet-budget', '200000'),
+    quiet: flag('quiet'),
   });
 }
 
@@ -308,4 +356,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main };
+module.exports = { main, createNetwork };

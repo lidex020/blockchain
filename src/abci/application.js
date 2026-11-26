@@ -5,6 +5,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { ethers } = require('ethers');
 
+const { LidexBlock } = require('../block');
+const { evmHeaderFields } = require('../chain');
+
 const BLOCK_ID_FLAG_ABSENT = 1;
 const BLOCK_ID_FLAG_COMMIT = 2;
 const BLOCK_ID_FLAG_NIL = 3;
@@ -260,7 +263,25 @@ class ABCIApplication {
     return txs.map((tx) => `0x${hex(tx)}`);
   }
 
-  async simulate({ height, time, txs, commitInfo, misbehavior = [] }) {
+  /**
+   * Resolve a CometBFT proposer address to the mapped LIDEX operator EVM
+   * address. CometBFT v0.38+ always sends proposer_address; older test
+   * clients may omit it, in which case the zero address is recorded rather
+   * than inventing a proposer. An address with no mapping is a hard error:
+   * only mapped validators may propose.
+   */
+  proposerOperator(proposerAddress) {
+    if (proposerAddress === undefined || proposerAddress === null) {
+      return '0x0000000000000000000000000000000000000000';
+    }
+    const cometAddress = hex(proposerAddress);
+    if (!cometAddress) return '0x0000000000000000000000000000000000000000';
+    const mapping = this.mappingsByCometAddress.get(cometAddress);
+    if (!mapping) throw new Error(`ABCI proposer address ${cometAddress} has no LIDEX validator mapping`);
+    return mapping.operator;
+  }
+
+  async simulate({ height, time, txs, commitInfo, misbehavior = [], proposerAddress }) {
     if (misbehavior.length) {
       throw new Error('CometBFT misbehavior has no verified LIDEX evidence mapping in this vertical slice');
     }
@@ -268,6 +289,8 @@ class ABCIApplication {
     if (blockHeight !== this.height + 1) throw new Error(`ABCI block height ${blockHeight} is not the next height ${this.height + 1}`);
     const timestamp = this.timestampSeconds(time);
     const lastCommitSigners = this.signersFromCommit(commitInfo, blockHeight);
+    const proposer = this.proposerOperator(proposerAddress);
+    const round = safeNumber(commitInfo?.round ?? 0, 'commit round');
     const outcome = await this.chain.execution.queue(() => this.chain.execution._executeBlock({
       parentBlock: this.chain.headEvmBlock,
       txs: txs.map((raw) => ({ raw })),
@@ -284,7 +307,7 @@ class ABCIApplication {
       consensusAddress: validator.consensusAddress,
       power: BigInt(validator.power),
     })));
-    return { height: blockHeight, timestamp, txs, commitVotes: serializeVoteInfo(commitInfo), outcome };
+    return { height: blockHeight, timestamp, txs, commitVotes: serializeVoteInfo(commitInfo), outcome, proposer, round };
   }
 
   prepareProposal(request) {
@@ -359,6 +382,7 @@ class ABCIApplication {
       time: request.time,
       txs,
       commitInfo: request.decidedLastCommit,
+      proposerAddress: request.proposerAddress,
     });
     const previousSet = this.chain.protocol.staking.activeSet();
     const nextSet = (result.outcome.activeValidators ?? []).map((validator) => ({
@@ -486,13 +510,43 @@ class ABCIApplication {
     if (String(outcome.appHash).toLowerCase() !== String(record.appHash).toLowerCase()) {
       throw new Error(`ABCI replay app-hash mismatch at height ${record.height}; preserve the journal and diagnose a separate copy`);
     }
-    this.publishCommittedState(record.height, outcome);
+    this.publishCommittedState(record.height, outcome, record);
     return outcome;
   }
 
-  publishCommittedState(height, outcome) {
+  /**
+   * Publish a committed block to the Chain indexes that RPC, WebSocket and
+   * explorer reads depend on (blocks, receipts, head, EVM headers) and fire
+   * the same onCommitted hooks the custom-consensus path fires. Without
+   * this, an ABCI-driven node executes blocks but serves stale reads:
+   * eth_blockNumber would stay at genesis while CometBFT advances.
+   *
+   * Persistence deliberately stays in the ABCI journal (see commit()): the
+   * Chain block log is not appended here, so a restart replays genesis from
+   * the Chain store and then the journal, exactly once each.
+   */
+  publishCommittedState(height, outcome, record = {}) {
     this.height = height;
     this.appHash = String(outcome.appHash);
+    const block = LidexBlock.assemble({
+      chainId: String(this.chain.chainId),
+      height,
+      time: Number(record.timestamp ?? 0) * 1000,
+      round: Number(record.round ?? 0),
+      proposer: record.proposer ?? '0x0000000000000000000000000000000000000000',
+      parentHash: this.chain.head.hash,
+      txs: record.txs ?? outcome.transactions.map((tx) => ethers.hexlify(tx.serialize())),
+      evidence: [],
+      lastCommit: null,
+      stateRoot: String(outcome.stateRoot),
+      appHash: String(outcome.appHash),
+      validatorsHash: ethers.hexlify(outcome.validatorsHash),
+      gasUsed: outcome.gasUsed,
+      gasLimit: this.chain.params.blockGasLimit,
+    });
+    this.chain._register(block, outcome.receipts);
+    this.chain.evmHeaders.set(height, outcome.evmHeader ?? evmHeaderFields(outcome));
+    this.chain.head = block;
     this.chain.headEvmBlock = outcome.evmBlock;
     this.chain.execution.headBlock = outcome.evmBlock;
     this.chain.stateRoot = String(outcome.stateRoot);
@@ -506,6 +560,13 @@ class ABCIApplication {
     for (const tx of outcome.transactions) {
       this.chain.nonceCache.set(normalizedAddress(tx.getSenderAddress().toString()), Number(tx.nonce) + 1);
     }
+    for (const hook of this.chain._committedHooks) {
+      try {
+        hook(block, outcome, 'cometbft-abci');
+      } catch {
+        // Hook failures (e.g. a closed WebSocket) must not fail the commit.
+      }
+    }
   }
 
   async commit() {
@@ -516,6 +577,8 @@ class ABCIApplication {
       timestamp: pending.timestamp,
       txs: pending.txs.map((raw) => raw.toLowerCase()),
       commitVotes: pending.commitVotes,
+      proposer: pending.proposer,
+      round: pending.round,
       appHash: String(pending.outcome.appHash),
     };
     try {

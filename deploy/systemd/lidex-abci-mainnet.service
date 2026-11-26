@@ -1,0 +1,48 @@
+# Systemd unit: LIDEX CometBFT ABCI++ application for public Mainnet.
+#
+# Hosts the ABCI++ socket application and EVM JSON-RPC/WS/explorer HTTP
+# surface on loopback port 7301. CometBFT owns consensus.
+#
+# PREPARATION ONLY. Not activated until mainnet-deploy.sh is run with
+# explicit authorization.
+
+[Unit]
+Description=LIDEX ABCI++ application (Mainnet)
+After=network.target lidex-cometbft-mainnet.service
+Wants=network.target
+Requires=lidex-cometbft-mainnet.service
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=mainnet
+Environment=LIDEX_COMET_RPC_URL=http://127.0.0.1:26657
+Environment=LIDEX_ABCI_LISTEN=tcp://127.0.0.1:26658
+Environment=LIDEX_ABCI_DATADIR=/srv/lidex/mainnet/abci
+Environment=LIDEX_GENESIS=/srv/lidex/mainnet/genesis.json
+Environment=LIDEX_VALIDATOR_MAP=/srv/lidex/mainnet/validator-map.json
+Environment=LIDEX_RPC_PORT=7301
+Environment=LIDEX_RPC_HOST=127.0.0.1
+# No faucet on Mainnet.
+Environment=LIDEX_FAUCET_KEY=
+Environment=LIDEX_RPC_RATE_LIMIT=1200
+ExecStart=/usr/bin/node /workspaces/lidex/src/abci/serve.js \
+  --genesis ${LIDEX_GENESIS} \
+  --validator-map ${LIDEX_VALIDATOR_MAP} \
+  --datadir ${LIDEX_ABCI_DATADIR} \
+  --listen ${LIDEX_ABCI_LISTEN} \
+  --rpc-port ${LIDEX_RPC_PORT} \
+  --rpc-host ${LIDEX_RPC_HOST} \
+  --comet-rpc-url ${LIDEX_COMET_RPC_URL} \
+  --rpc-rate-limit ${LIDEX_RPC_RATE_LIMIT}
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/srv/lidex/mainnet/abci
+
+[Install]
+WantedBy=multi-user.target

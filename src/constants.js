@@ -12,13 +12,26 @@
 const CHAIN = {
   name: 'lidex',
   displayName: 'Lidex Blockchain',
-  /** EIP-155 chain id (decimal). Mainnet candidate. */
+  /** EIP-155 chain id (decimal). Approved Mainnet chain id (owner-approved). */
   chainId: 72122n,
   /** Human readable network identifiers used by wallets. */
   networkId: 72122,
   slip44: 721,
-  /** Testnet chain id used by the public/independent test network. */
-  testnetChainId: 721220,
+  /**
+   * Devnet / local test fixture chain id. This is the id baked into the
+   * checked-in devnet fixture (seed `fs-testnet-seed`) and the historical
+   * local networks. It must never be reused for a public testnet or mainnet.
+   */
+  devnetChainId: 721220,
+  /**
+   * Public testnet chain id: UNASSIGNED. A public testnet must use a new,
+   * owner-approved chain id that is distinct from both the devnet id above
+   * and the mainnet candidate. It is supplied explicitly at testnet genesis
+   * creation time (scripts/init-testnet.js --chain-id) and is never defaulted
+   * here, so no code path can silently launch a public network on an
+   * unapproved id.
+   */
+  testnetChainId: null,
 };
 
 const COIN = {

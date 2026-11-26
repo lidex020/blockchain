@@ -1,0 +1,38 @@
+# Systemd unit: LIDEX CometBFT consensus node for public Mainnet.
+#
+# CometBFT owns consensus, block production, and P2P for Mainnet.
+# All CometBFT ports bind loopback only and are never exposed publicly.
+#
+# PREPARATION ONLY. This unit file is installed but Mainnet services are
+# not activated until you run mainnet-deploy.sh with explicit authorization.
+#
+# Operator requirements before starting:
+#   1. Approved Mainnet genesis.json in /srv/lidex/mainnet/
+#   2. Verified validator-map.json in /srv/lidex/mainnet/
+#   3. CometBFT node keys from offline ceremony in cometbft/config/
+#   4. persistent_peers configured for approved Mainnet validators
+
+[Unit]
+Description=LIDEX CometBFT consensus node (Mainnet)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=mainnet
+Environment=LIDEX_COMET_HOME=/srv/lidex/mainnet/cometbft
+Environment=COMETBFT_BIN=/usr/local/bin/cometbft
+ExecStartPre=/usr/bin/install -d -o lidex -g lidex /srv/lidex/mainnet/cometbft
+ExecStart=${COMETBFT_BIN} node --home ${LIDEX_COMET_HOME}
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/srv/lidex/mainnet/cometbft
+
+[Install]
+WantedBy=multi-user.target

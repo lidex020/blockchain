@@ -1,0 +1,46 @@
+# Systemd unit: LIDEX public API gateway for public Testnet.
+#
+# The single public-facing process for the testnet. It forwards ONLY the
+# public surface (POST / JSON-RPC, GET /network.json, GET /health, WS /ws,
+# OPTIONS /) to the loopback ABCI RPC backend and fails closed for everything
+# else (/p2p/*, /metrics, and all other paths -> 403/404).
+#
+# Listens on 127.0.0.1:8080 (loopback only). Nginx terminates TLS on 443 and
+# proxies to this gateway.
+#
+#   sudo systemctl enable --now lidex-gateway-testnet.service
+
+[Unit]
+Description=LIDEX public API gateway (Testnet)
+After=network.target lidex-abci-testnet.service
+Wants=network.target
+Requires=lidex-abci-testnet.service
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=testnet
+Environment=LIDEX_GATEWAY_PORT=8080
+Environment=LIDEX_GATEWAY_HOST=127.0.0.1
+# Backend is the loopback ABCI RPC (never CometBFT directly).
+Environment=LIDEX_GATEWAY_BACKEND=http://127.0.0.1:7302
+# Allowed browser origins for CORS + WebSocket origin check.
+Environment=LIDEX_CORS_ORIGINS=https://rpc-testnet.lidex.tech,https://ws-testnet.lidex.tech,https://api-testnet.lidex.tech,https://explorer-testnet.lidex.tech
+# Per-client request limit (requests per minute).
+Environment=LIDEX_GATEWAY_RATE_LIMIT=1200
+ExecStart=/usr/bin/node /workspaces/lidex/src/gateway.js \
+  --backend ${LIDEX_GATEWAY_BACKEND} \
+  --port ${LIDEX_GATEWAY_PORT} \
+  --host ${LIDEX_GATEWAY_HOST} \
+  --network ${LIDEX_NETWORK} \
+  --cors-origin ${LIDEX_CORS_ORIGINS} \
+  --rate-limit ${LIDEX_GATEWAY_RATE_LIMIT}
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

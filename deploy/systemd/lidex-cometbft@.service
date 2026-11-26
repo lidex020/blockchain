@@ -1,0 +1,38 @@
+# Systemd unit for the CometBFT consensus node (one per network, %i).
+#
+# CometBFT owns consensus + P2P + block production. It binds loopback only;
+# its P2P (26656) and RPC (26657) ports must NEVER be exposed publicly.
+# The LIDEX ABCI application connects to CometBFT over the ABCI socket
+# (tcp://127.0.0.1:26658 by default).
+#
+# Operator must: install a CometBFT binary, initialize the node's config and
+# genesis (data dir is network-specific), and set LIDEX_COMET_HOME. This unit
+# does not contain validator keys or secrets.
+#
+#   sudo systemctl enable --now lidex-cometbft@testnet.service
+
+[Unit]
+Description=LIDEX CometBFT consensus node (%i)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=%i
+# CometBFT home directory holds config + data for this network.
+Environment=LIDEX_COMET_HOME=/srv/lidex/%i/cometbft
+# CometBFT binary path (operator-provided).
+Environment=COMETBFT_BIN=/usr/local/bin/cometbft
+ExecStartPre=/usr/bin/install -d -o lidex -g lidex /srv/lidex/%i/cometbft
+ExecStart=${COMETBFT_BIN} node --home ${LIDEX_COMET_HOME}
+Restart=on-failure
+RestartSec=5
+# Keep consensus transport private: no ambient network exposure beyond loopback.
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

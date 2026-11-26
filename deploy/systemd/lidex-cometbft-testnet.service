@@ -1,0 +1,44 @@
+# Systemd unit: LIDEX CometBFT consensus node for public Testnet.
+#
+# CometBFT owns consensus, block production, and P2P for the testnet.
+# All CometBFT ports bind loopback only and are never exposed publicly:
+#   26656 P2P, 26657 RPC, 26658 ABCI socket (to LIDEX app)
+#
+# Operator requirements before starting:
+#   1. Install CometBFT binary (v0.39.4 source-built or prebuilt).
+#   2. Initialize CometBFT home: cometbft init --home /srv/lidex/testnet/cometbft
+#   3. Replace genesis.json with the approved testnet genesis (offline ceremony).
+#   4. Configure priv_validator_key.json and node_key.json from the ceremony.
+#   5. Set persistent_peers to approved testnet validators only.
+#
+# Private keys are never committed to Git and never placed on a shared
+# filesystem. They are provisioned to /srv/lidex/testnet/cometbft/config/
+# through the offline genesis ceremony and secured with file permissions.
+#
+#   sudo systemctl enable --now lidex-cometbft-testnet.service
+
+[Unit]
+Description=LIDEX CometBFT consensus node (Testnet)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=testnet
+Environment=LIDEX_COMET_HOME=/srv/lidex/testnet/cometbft
+Environment=COMETBFT_BIN=/usr/local/bin/cometbft
+ExecStartPre=/usr/bin/install -d -o lidex -g lidex /srv/lidex/testnet/cometbft
+ExecStart=${COMETBFT_BIN} node --home ${LIDEX_COMET_HOME}
+Restart=on-failure
+RestartSec=5
+# Consensus transport stays private: no public exposure.
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/srv/lidex/testnet/cometbft
+
+[Install]
+WantedBy=multi-user.target

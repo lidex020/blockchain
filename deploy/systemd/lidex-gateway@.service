@@ -1,0 +1,46 @@
+# Systemd unit for the LIDEX public API gateway (%i = network).
+#
+# The single process allowed to face the public internet for a LIDEX network.
+# It forwards ONLY the public surface (POST / JSON-RPC, GET /network.json,
+# GET /health, WS /ws, OPTIONS /) to the backend ABCI RPC and fails closed for
+# everything else (/p2p/*, /metrics, and all other paths -> 403/404).
+#
+# Nginx terminates TLS on 443 and proxies to this gateway on a private port.
+# The gateway listens on 127.0.0.1 only; it is not exposed directly.
+#
+#   sudo systemctl enable --now lidex-gateway@testnet.service
+
+[Unit]
+Description=LIDEX public API gateway (%i)
+After=network.target lidex-abci@%i.service
+Wants=network.target
+Requires=lidex-abci@%i.service
+
+[Service]
+Type=simple
+User=lidex
+Group=lidex
+WorkingDirectory=/workspaces/lidex
+Environment=LIDEX_NETWORK=%i
+Environment=LIDEX_GATEWAY_PORT=7302
+Environment=LIDEX_GATEWAY_HOST=127.0.0.1
+# Backend is the loopback ABCI RPC (never CometBFT directly).
+Environment=LIDEX_GATEWAY_BACKEND=http://127.0.0.1:7302
+# Allowed browser origins for CORS + WS origin check (operator-provided).
+Environment=LIDEX_CORS_ORIGINS=https://testnet.lidex.tech
+# Per-client request limit (requests per minute).
+Environment=LIDEX_GATEWAY_RATE_LIMIT=1200
+ExecStart=/usr/bin/node /workspaces/lidex/src/gateway.js \
+  --backend ${LIDEX_GATEWAY_BACKEND} \
+  --port ${LIDEX_GATEWAY_PORT} \
+  --host ${LIDEX_GATEWAY_HOST} \
+  --network ${LIDEX_NETWORK} \
+  --cors-origin ${LIDEX_CORS_ORIGINS} \
+  --rate-limit ${LIDEX_GATEWAY_RATE_LIMIT}
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
